@@ -9,46 +9,42 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-int main(int argc, char *argv[])
-{
-	int listenSocket = 0;	// This is my server's socket which is created to 
+int listenSocket = 0;
+int connectionSocket = 0;
+char buffer[1024];
+struct sockaddr_in s_serv_addr;
+int portno = 5005;
+
+void initServer() {
+	char filename[50], filesize[20];
+	char fbuffer[1024];
 	struct stat obj;
-	char buffer[1024];					
-	char filename[1024];	//	listen to incoming connections
-	int connectionSocket = 0;
-
-	struct sockaddr_in serv_addr;		// This is for addrport for listening
-
-	// Creating a socket
-
 	listenSocket = socket(AF_INET,SOCK_STREAM,0);
 	if(listenSocket<0)
 	{
 		printf("ERROR WHILE CREATING A SOCKET\n");
-		return 0;
 	}
 	else
 		printf("[SERVER] SOCKET ESTABLISHED SUCCESSFULLY\n\n");
 
 	// Its a general practice to make the entries 0 to clear them of malicious entry
 
-	bzero((char *) &serv_addr,sizeof(serv_addr));
+	bzero((char *) &s_serv_addr,sizeof(s_serv_addr));
+	
 
-	// Binding the socket
-	int size;
-	int sentsize;
-	int portno = 5005;
-	serv_addr.sin_family = AF_INET;	//For a remote machine
-	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	serv_addr.sin_port = htons(portno);
-int yes=1;
+	s_serv_addr.sin_family = AF_INET;	//For a remote machine
+	s_serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	s_serv_addr.sin_port = htons(portno);
+
+	int yes=1;
 //char yes='1'; // use this under Solaris
 
 if (setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) {
     perror("setsockopt");
-    return 1;
 }
-	if(bind(listenSocket,(struct sockaddr * )&serv_addr,sizeof(serv_addr))<0)
+
+
+if(bind(listenSocket,(struct sockaddr * )&s_serv_addr,sizeof(s_serv_addr))<0)
 		printf("ERROR WHILE BINDING THE SOCKET\n");
 	else
 		printf("[SERVER] SOCKET BINDED SUCCESSFULLY\n");
@@ -61,60 +57,138 @@ if (setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1)
 	}
 	printf("[SERVER] Waiting fo client to connect....\n" );
 
-	// Accepting connections
-	while(2) {
-	while((connectionSocket=accept(listenSocket , (struct sockaddr*)NULL,NULL))<0);
 
-	// NULL will get filled in by the client's sockaddr once a connection is establised
+while((connectionSocket=accept(listenSocket , (struct sockaddr*)NULL,NULL))<0);
+
 
 	printf("[CONNECTED]\n");
 
 	bzero(buffer,1024);
-	if(recv(connectionSocket,buffer,1023,0)<0)
+	if(recv(connectionSocket,buffer,1024,0)<0)
 		printf("ERROR while reading from Client\n");
 
 
 	printf("Message from Client: %s\n",buffer );
+	
 	switch(buffer[0]) {
 		case 'd':
-			sscanf(buffer+1, "%s", filename);
+	
+	sscanf(buffer+1, "%s", filename);
 	FILE *fp = fopen(filename, "rb");
 
-	bzero(buffer,1023);
-	printf("Reply to Client: ");
-	// fgets(buffer,1023,stdin);
+	bzero(buffer,1024);
+
+
 	if (fp>=0) 
 	{
 		buffer[0]='x';
-	send(connectionSocket,buffer,strlen(buffer),0);
-}
-	  stat(filename, &obj);
-	  size = obj.st_size;
-	  send(connectionSocket, &size, sizeof(long long int), 0);
-	  // printf("Size: %lld\n", *(&size));
+		stat(filename, &obj);
+		long long int size = (long long) obj.st_size;
+		sprintf(buffer+1, "%lld", size);
+		send(connectionSocket,buffer,1024,0);
+	}
+	printf("The size of file is: %s\n", buffer);
 
-	  sentsize = 0;
-	while (1)
+	while (fread(buffer, sizeof(char), 1024, fp))
 	{
-		size_t newLen = fread(buffer, sizeof(char), 1024, fp);
-		if (newLen==0) {
-			break;
-		}
+		send(connectionSocket,buffer,1024,0);
+		bzero(buffer,1024);
+	}	
 
-		send(connectionSocket,buffer,strlen(buffer),0);
+
+}
+
+	close(connectionSocket);
+	initServer();
+}
+
+int initClient(char * filename) {
+	int client_pid = fork();
+	if(client_pid != 0)
+        return client_pid;
+char returncode[1024];
+	int ClientSocket = 0;
+	int ret;
+	int i;
+	long long int fileSize;
+	struct sockaddr_in c_serv_addr;
+
+	ClientSocket = socket(AF_INET,SOCK_STREAM,0);
+	if(ClientSocket<0)
+	{
+		printf("ERROR WHILE CREATING A SOCKET\n");
+		return 0;
+	}
+	else
+		printf("[CLIENT] Socket created \n");
+
+
+
+	c_serv_addr.sin_family = AF_INET;
+	c_serv_addr.sin_port = htons(portno);
+	c_serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+
+while(connect(ClientSocket,(struct sockaddr *)&c_serv_addr,sizeof(c_serv_addr))<0);
+
+	bzero(buffer,1024);
+	sscanf(filename, "%s", buffer);
+
+	if(send(ClientSocket,buffer,strlen(buffer),0)<0)
+		printf("ERROR while writing to the socket\n");
 	bzero(buffer,1024);
 
-		// printf("%d %d ", sentsize, newLen);
-   		// sentsize += static_cast<long long int>(strlen(buffer));
-	}	
-	break;
+	FILE *fp = fopen("newfile", "wb");
+	if(recv(ClientSocket,buffer,1024,0)<0)
+		printf("ERROR while reading from the socket\n");
+ 	sscanf(buffer, "%s", returncode);
+	if(returncode[0]=='x') {
+		i=1;
+		fileSize = 0;
+		while(returncode[i]!='\0') {
+        fileSize *= 10;
+        fileSize += returncode[i++]-'0';
+    	}
+    	printf("The filesize is %lld\n", fileSize);
+		bzero(buffer,1024);
+		ret = 1;
+		while (2) {
+			if(!ret)
+            break;
+			bzero(buffer,1024);
+			ret=recv(ClientSocket,buffer,1024,0);
+			fwrite(buffer, sizeof(char),strlen(buffer), fp);
+			}
+		bzero(buffer,1024);
+		fclose(fp);
+	}
+	printf("File download complete.\n");
+	printf("Closing Connection\n");
+	close(ClientSocket);
+	return 1;
+
+}
+int main(int argc, char *argv[])
+{
+	
+	int serv_pid = 0;
+	serv_pid = fork();
+	if (serv_pid == 0) {
+		initServer();
+        close(listenSocket);
 
 	}
-	bzero(buffer,1024);
- 	
-	printf("\nClosing connection\n");
-	close(connectionSocket);
-}
-	close(listenSocket);
+	char filename[50];
+	while (1) {
+		printf("Enter filename: ");
+		bzero(filename, 50);
+		fgets(filename+1,49,stdin);
+		filename[0] = 'd';
+		
+		if(!initClient(filename))
+                break;
+	}
+	printf("\nClosing connection2\n");
+	
 	return 0;
 }
