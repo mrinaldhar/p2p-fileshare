@@ -19,14 +19,7 @@ void initServer() {
 	char filename[50], filesize[20];
 	char fbuffer[1024];
 	struct stat obj;
-	listenSocket = socket(AF_INET,SOCK_STREAM,0);
-	if(listenSocket<0)
-	{
-		printf("ERROR WHILE CREATING A SOCKET\n");
-	}
-	else
-		printf("[SERVER] SOCKET ESTABLISHED SUCCESSFULLY\n\n");
-
+	
 	// Its a general practice to make the entries 0 to clear them of malicious entry
 
 	bzero((char *) &s_serv_addr,sizeof(s_serv_addr));
@@ -174,6 +167,14 @@ int main(int argc, char *argv[])
 	int serv_pid = 0;
 	serv_pid = fork();
 	if (serv_pid == 0) {
+		listenSocket = socket(AF_INET,SOCK_STREAM,0);
+	if(listenSocket<0)
+	{
+		printf("ERROR WHILE CREATING A SOCKET\n");
+	}
+	else
+		printf("[SERVER] SOCKET ESTABLISHED SUCCESSFULLY\n\n");
+
 		initServer();
         close(listenSocket);
 

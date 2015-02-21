@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <pthread.h>
 
 int listenSocket = 0;
 int connectionSocket = 0;
@@ -19,7 +20,14 @@ void initServer() {
 	char filename[50], filesize[20];
 	char fbuffer[1024];
 	struct stat obj;
-	
+	listenSocket = socket(AF_INET,SOCK_STREAM,0);
+	if(listenSocket<0)
+	{
+		printf("ERROR WHILE CREATING A SOCKET\n");
+	}
+	else
+		printf("[SERVER] SOCKET ESTABLISHED SUCCESSFULLY\n\n");
+
 	// Its a general practice to make the entries 0 to clear them of malicious entry
 
 	bzero((char *) &s_serv_addr,sizeof(s_serv_addr));
@@ -48,7 +56,7 @@ if(bind(listenSocket,(struct sockaddr * )&s_serv_addr,sizeof(s_serv_addr))<0)
 	{
 		printf("[SERVER] FAILED TO ESTABLISH LISTENING \n\n");
 	}
-	printf("[SERVER] Waiting fo client to connect....\n" );
+	printf("[SERVER] Waiting for client to connect....\n" );
 
 
 while((connectionSocket=accept(listenSocket , (struct sockaddr*)NULL,NULL))<0);
@@ -96,9 +104,11 @@ while((connectionSocket=accept(listenSocket , (struct sockaddr*)NULL,NULL))<0);
 }
 
 int initClient(char * filename) {
+	// char * filename = (char *) fileName;
 	int client_pid = fork();
 	if(client_pid != 0)
         return client_pid;
+	printf("Downloading %s\n", filename);
 char returncode[1024];
 	int ClientSocket = 0;
 	int ret;
@@ -110,7 +120,7 @@ char returncode[1024];
 	if(ClientSocket<0)
 	{
 		printf("ERROR WHILE CREATING A SOCKET\n");
-		return 0;
+		// return 0;
 	}
 	else
 		printf("[CLIENT] Socket created \n");
@@ -163,19 +173,13 @@ while(connect(ClientSocket,(struct sockaddr *)&c_serv_addr,sizeof(c_serv_addr))<
 }
 int main(int argc, char *argv[])
 {
-	
+	pthread_t tid, tid2;
 	int serv_pid = 0;
 	serv_pid = fork();
-	if (serv_pid == 0) {
-		listenSocket = socket(AF_INET,SOCK_STREAM,0);
-	if(listenSocket<0)
-	{
-		printf("ERROR WHILE CREATING A SOCKET\n");
-	}
-	else
-		printf("[SERVER] SOCKET ESTABLISHED SUCCESSFULLY\n\n");
-
+	if (serv_pid != 0) {
 		initServer();
+		// pthread_create(&tid, NULL, initServer, NULL);
+    	// pthread_join(tid, NULL);
         close(listenSocket);
 
 	}
@@ -185,7 +189,8 @@ int main(int argc, char *argv[])
 		bzero(filename, 50);
 		fgets(filename+1,49,stdin);
 		filename[0] = 'd';
-		
+		// pthread_create(&tid2, NULL, initClient, (void *)filename);
+    	// pthread_join(tid2, NULL);
 		if(!initClient(filename))
                 break;
 	}
