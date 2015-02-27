@@ -15,6 +15,28 @@ char buffer[1024];
 struct sockaddr_in s_serv_addr;
 int portno = 5005;
 
+void parse(char cmd[], char ** vals) {
+	int i, j, k;
+	char arg[49], c;
+	i = j = k = 0;
+	while (2) {
+		j=0;
+        c= cmd[i++];
+        while(c!=' ' && c!='\0') {
+            arg[j++] = c;
+            c = cmd[i++];
+        }
+        while(c==' '){
+            c = cmd[i++];
+        }
+        i--;
+        arg[j] = '\0';
+        vals[k++] = strdup(arg);
+        if(c=='\0')
+            break;
+    }
+    vals[k] = '\0';
+}
 void initServer() {
 	char filename[50], filesize[20];
 	char fbuffer[1024];
@@ -161,10 +183,23 @@ while(connect(ClientSocket,(struct sockaddr *)&c_serv_addr,sizeof(c_serv_addr))<
 	return 1;
 
 }
+
+void cpy(char * a, char * b) {
+	int i, j;
+	i=j=0;
+	while (b[i]!='\0') {
+		a[i] = b[i];
+		i++;
+	}
+	a[i] = '\0';
+}
 int main(int argc, char *argv[])
 {
 	
 	int serv_pid = 0;
+	int i;
+	char cmd[1024];
+	char *vals[49];
 	serv_pid = fork();
 	if (serv_pid == 0) {
 		listenSocket = socket(AF_INET,SOCK_STREAM,0);
@@ -181,13 +216,25 @@ int main(int argc, char *argv[])
 	}
 	char filename[50];
 	while (1) {
-		printf("Enter filename: ");
-		bzero(filename, 50);
-		fgets(filename+1,49,stdin);
-		filename[0] = 'd';
+		printf("$> ");
+        scanf("%[^\n]s", cmd);
+        getchar();
+        parse(cmd, vals);
+        if(!strcmp(vals[0], "FileDownload")) {
+			// printf("Enter filename: ");
+			printf("%s\n", vals[1]);
+			printf("%d\n", strlen(vals[1]));
+			bzero(filename, 50);
+			cpy(filename+1, vals[1]);
+			filename[0] = 'd';
 		
-		if(!initClient(filename))
+			if(!initClient(filename))
                 break;
+        }
+        else if(!strcmp(vals[0], "exit")) {
+            close(listenSocket);
+            exit(0);
+        }
 	}
 	printf("\nClosing connection2\n");
 	
