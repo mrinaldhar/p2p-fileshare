@@ -10,6 +10,7 @@
 #include <dirent.h>
 #include <sys/syscall.h>
 #include <time.h>
+#include <regex.h>
 #define PATH 100000
 #define KB 1024
 #define MB 1048576
@@ -23,8 +24,7 @@ struct DIR {
            char           d_name[];
 };
 
-void datetime(int date)
-{
+void datetime(int date){
 	int seconds, seconds_left,minutes,minutes_left,hours,hours_left,days,days_left,years;
 	seconds = date;
 	seconds = seconds - 2*31536000;
@@ -102,11 +102,10 @@ void datetime(int date)
 	if(minutes_left < 10)
 		printf("0");
 	printf("%d:",minutes_left);
-	printf("%d ",seconds_left );
+	printf("%02d ",seconds_left );
 }
 
-int dateToEpoch()
-{
+int dateToEpoch(){
 	printf("An example of date format is: 27 Feb 2015 18:20:28\n");
 	struct tm tm;
 	time_t t;
@@ -135,8 +134,7 @@ int dateToEpoch()
 	return t;
 }
 
-void human(int bsize)
-{
+void human(int bsize){
 	float hsize;
 	if(bsize > GB)
 	{
@@ -161,13 +159,12 @@ void human(int bsize)
 	else
 	{
 		hsize = 0;
-		printf("   0 ",hsize);
+		printf("%4d ",hsize);
 	}
 }
 
-int getMoreInfo(char* path,char* name, int start_time, int end_time, int longlist)
+int getMoreInfo(char* path,char* name, int start_time, int end_time, int longlist, int regexFlag, regex_t regex)
 {
-	//printf("%s/%s\n",path, name );
 	char temppath[PATH];
 	
     strcpy(temppath,path);strcat(temppath, "/");strcat(temppath,name);
@@ -178,11 +175,24 @@ int getMoreInfo(char* path,char* name, int start_time, int end_time, int longlis
     	printf("Error has occured\n");
 	    return 1;
 	}
-	//printf("%d %d %d\n",start_time, end_time, fileStat.st_mtime );
-	//printf("%d %d\n",fileStat.st_mtime <=end_time, fileStat.st_mtime >= start_time );
-	//datetime(fileStat.st_mtime);
 	if(fileStat.st_mtime <= end_time && fileStat.st_mtime >= start_time || longlist == 1)
 	{
+		if(regexFlag)
+		{
+			int reti;
+			char msgbuf[100];
+			reti = regexec(&regex, name, 0, NULL, 0);
+			if( !reti );
+			else if( reti == REG_NOMATCH ){
+					printf("--\n");
+			        return 0;
+			}
+			else{
+			        regerror(reti, &regex, msgbuf, sizeof(msgbuf));
+			        fprintf(stderr, "Regex match failed: %s\n", msgbuf);
+			        exit(1);
+			}
+		}
 		datetime(fileStat.st_mtime);
 		int dflag,lflag;
 		dflag = (S_ISDIR(fileStat.st_mode));
@@ -202,8 +212,7 @@ int getMoreInfo(char* path,char* name, int start_time, int end_time, int longlis
 	return 0;
 }
 
-
-void getListOfFiles(char* string, int level, int start_time, int end_time, int longlist)
+void getListOfFiles(char* string, int level, int start_time, int end_time, int longlist, int regexFlag, regex_t regex)
 {
 		char pathToDirectory[100];
 		int fine,exists;
@@ -246,14 +255,14 @@ void getListOfFiles(char* string, int level, int start_time, int end_time, int l
              //                    (d_type == DT_CHR) ?  "char dev" : "???");
             	//printf("%s\n", d->d_name);
             	//printf("%s/%s\n",string,d->d_name );
-            	getMoreInfo(string,d->d_name,start_time,end_time,longlist);
+            	getMoreInfo(string,d->d_name,start_time,end_time,longlist,regexFlag,regex);
         		if((d_type == DT_DIR) && d->d_name[0] != '.')
         		{	
         			char dup[100];
         			strcpy(dup,string);
         			strcat(dup, "/");
         			strcat(dup,d->d_name);
-        			getListOfFiles(dup,level + 1,start_time,end_time,longlist);
+        			getListOfFiles(dup,level + 1,start_time,end_time,longlist,regexFlag,regex);
         		}
             	offset += d->d_reclen;
 	        }
@@ -261,23 +270,72 @@ void getListOfFiles(char* string, int level, int start_time, int end_time, int l
 }
 
 
+void historyOfRequests(char* pathToDirectory, int start_time, int end_time, int longlist, int regexFlag, char* regex)
+{
+	FILE * historyOfRequests;
+	historyOfRequests = fopen ("historyOfRequests.txt", "a");
+	fprintf(historyOfRequests,"%s %d %d %d %d %s\n",pathToDirectory,start_time,end_time,longlist,regexFlag,regex);
+	fclose(historyOfRequests);
+	return 0;		
+}
+
 int main(int argc, char const *argv[])
 {
 	// char* pathToDirectory = malloc(sizeof(char)*100);
 	char string[100];
+	char regex_input[100];
+	regex_input[1] = '\0';
+	regex_input[0] = 'n';
+	printf("Path to Directory Input: ");
 	scanf("%s",string);
 	realpath(string,pathToDirectory);
-	int start_time,end_time,longlist;
+	int start_time = 0,end_time = 0,longlist, regexFlag;
+	regex_t regex;
+	printf("LongList Flag Input: ");
 	scanf("%d",&longlist);
+	printf("RegexFlag Input: ");
+	scanf("%d",&regexFlag);
 	if(longlist == 0)
 	{
 		getchar();
 		start_time = dateToEpoch();
 		end_time = dateToEpoch();
-		getListOfFiles(pathToDirectory,0,start_time,end_time,longlist);
+		if(regexFlag == 0)
+			getListOfFiles(pathToDirectory,0,start_time,end_time,longlist,regexFlag,regex);
+		else if(regexFlag == 1)
+		{	
+			int reti;
+			scanf("%s",regex_input);
+			reti = regcomp(&regex,regex_input, 0);
+			if(reti)
+			{
+				fprintf(stderr, "Could not compile regex\n");
+				exit(1);
+			}
+			getListOfFiles(pathToDirectory,0,start_time,end_time,longlist,regexFlag,regex);
+			regfree(&regex);
+		}
 	}
 	else if (longlist == 1)
-		getListOfFiles(pathToDirectory,0,0,0,longlist);
+	{
+		if(regexFlag == 0)
+			getListOfFiles(pathToDirectory,0,start_time,end_time,longlist,regexFlag,regex);
+		else if(regexFlag == 1)
+		{
+			int reti;
+			scanf("%s",regex_input);
+			reti = regcomp(&regex,regex_input, 0);
+			if(reti)
+			{
+				fprintf(stderr, "Could not compile regex\n");
+				exit(1);
+			}
+			getListOfFiles(pathToDirectory,0,start_time,end_time,longlist,regexFlag,regex);
+			regfree(&regex);
+		}
+	}
+	printf("%s\n",regex_input );
+	historyOfRequests(pathToDirectory,start_time,end_time,longlist,regexFlag,regex_input);
 	
 	return 0;
 }
