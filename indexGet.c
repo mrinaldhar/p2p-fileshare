@@ -272,7 +272,7 @@ void historyOfRequests(char* pathToDirectory, int start_time, int end_time, int 
 
 void handleIndex(int longlist, int regexFlag, char * regEX)
 {
-	// char* pathToDirectory = malloc(sizeof(char)*100);
+	// freopen ("index.txt","w",stdout); ENABLE THIS
 	char *string;
 	char regex_input[100];
 	regex_input[1] = '\0';
@@ -330,6 +330,7 @@ void handleIndex(int longlist, int regexFlag, char * regEX)
 		}
 	}
 	printf("%s\n",regex_input );
+	// fclose(stdout); ENABLE THIS !!
 	historyOfRequests(pathToDirectory,start_time,end_time,longlist,regexFlag,regex_input);
 	
 	return 0;

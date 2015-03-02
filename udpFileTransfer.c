@@ -10,7 +10,6 @@
 #define BUFLEN 512
 #define NPACK 10
 #define PORT 9930
-#define SRV_IP "127.0.0.1"
 
 void PrintErrorAndDie(char *s)
 {
@@ -78,7 +77,7 @@ int initUDPServer(char * filename)
 	memset((char *) &socket_other, 0, sizeof(socket_other));
 	socket_other.sin_family = AF_INET;
 	socket_other.sin_port = htons(PORT);
-	if (inet_aton(SRV_IP, &socket_other.sin_addr)==0)
+	if (inet_aton(IP, &socket_other.sin_addr)==0)
 	{
 		fprintf(stderr, "inet_aton() failed\n");
 		exit(1);

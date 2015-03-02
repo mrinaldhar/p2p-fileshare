@@ -1,4 +1,3 @@
 rm -f server
-#rm -f client
-#gcc client.c -o client
+cc app.c mongoose.c -pthread -o app
 gcc server.c -pthread -w -o server
