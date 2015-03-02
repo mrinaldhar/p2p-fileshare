@@ -42,7 +42,7 @@ int initUDPClient(char * filename)
 	    
 
 		// int output;
-		strcat(filename, "_RCVDUDP");
+		strcat(filename, "_UDP");
 
 		int fileReceived, output;
 		fileReceived =  open(filename+2,O_CREAT|O_WRONLY|O_TRUNC, S_IWRITE | S_IREAD);
@@ -55,42 +55,19 @@ int initUDPClient(char * filename)
 				PrintErrorAndDie("recvfrom()");
 			printf("RECEIVED: %s", buf);
 
-			output =  write(fileReceived,buf,BUFLEN);
+			output =  write(fileReceived,buf,strlen(buf));
 			if(output < 0)
 				PrintErrorAndDie("Error in writing");
 		}
+		close(fileReceived);
 
-
-		// FILE *fp =  fopen(filename,"wb");
-		// while(1)
-		// {
-		// 	if (recvfrom(udp_socket, buf, BUFLEN, 0, &socket_other, &slen)==-1)
-		// 		PrintErrorAndDie("recvfrom()");
-		// 	fwrite(buf, sizeof(char),strlen(buf), fp);
-		// 	// output =  write(fileReceived,buf + 1,BUFLEN - 1);
-		// 	if(output < 0)
-		// 		PrintErrorAndDie("Error in writing");
-		// }
-		// int ret = 1;
-		// while (2) {
-		// 	if(ret!=-1)
-  //           break;
-		// 	bzero(buf,1024);
-		// 	ret=recvfrom(udp_socket, buf, 1024, 0, &socket_other, &slen);
-		// 	printf("RECEIVED: %s", buf);
-		// 	fwrite(buf, sizeof(char),strlen(buf), fp);
-		// 	}
 		bzero(buf,1024);
-		// fclose(fp);
 		close(udp_socket);
 	return 0;
 }
 
 int initUDPServer(char * filename)
 {
-	// 	int server = fork();
-	// if(server != 0)
- //        return server;
 	struct sockaddr_in socket_other;
 	int udp_socket, i, slen=sizeof(socket_other);
 	char buf[BUFLEN];
@@ -120,34 +97,7 @@ int fileToSend,output;
 			PrintErrorAndDie("sendto()");
 		bzero(buf,BUFLEN);
 	}
-// int fileToSend,output;
-// 	fileToSend = open("SampleFiles/image.jpeg",O_RDONLY,S_IREAD);
-// 	bzero(buf,BUFLEN);
-// 	while(output = read(fileToSend, buf + 1, BUFLEN - 1))
-// 	{
-// 		buf[0] ='x';
-// 		if(sendto(udp_socket, buf, BUFLEN, 0, &socket_other, slen)==-1)
-// 			PrintErrorAndDie("sendto()");
-// 		bzero(buf,BUFLEN);
-// 	}
- 
-// 	close(udp_socket);
-	// int fileToSend,output;
-	// int output;
-	// printf("%s\n", filename);
-	// FILE *fileToSend = fopen(filename,"rb");
-	// bzero(buf,BUFLEN);
-	// while(fread(buf, sizeof(char), 1024, fileToSend))
-	// {
-	// 	// buf[0] ='x';
-
-	// 	if(sendto(udp_socket, buf, 1024, 0, &socket_other, slen)==-1)
-	// 		PrintErrorAndDie("sendto()");
-		printf("SENT: %s\n", buf);
-
-	// 	bzero(buf,BUFLEN);
-	// }
- // 	fclose(fileToSend);
+	close(fileToSend);
 	close(udp_socket);
 	return 0;
  }

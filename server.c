@@ -183,7 +183,7 @@ bzero(buffer,1024);
 	if(send(ClientSocket,buffer,strlen(buffer),0)<0)
 		printf("ERROR while writing to the socket\n");
 	bzero(buffer,1024);
-	strcat(filename, "_RCVDTCP");
+	strcat(filename, "_TCP");
 	FILE *fp = fopen(filename+2, "wb");
 	if(recv(ClientSocket,buffer,1024,0)<0)
 		printf("ERROR while reading from the socket\n");
