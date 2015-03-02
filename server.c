@@ -119,7 +119,15 @@ else if (buffer[1]=='u') {
 	initUDPServer(filename);
 }
 	break;
+	 case 'u':
+	 sscanf(buffer+2, "%s", filename);
+	if (buffer[1]=='t'){
 
+	}
+	else if (buffer[1]=='u') {
+		if (!initUDPClient(filename))
+					break;
+	}
 
 
 }
@@ -254,15 +262,11 @@ int main(int argc, char *argv[])
         getchar();
         parse(cmd, vals);
         if(!strcmp(vals[0], "FileDownload")) {
-			// printf("Enter filename: ");
 			if (!strcmp(vals[1], "TCP")) {
-				// printf("%s\n", vals[2]);
-			// printf("%d\n", strlen(vals[2]));
 			bzero(filename, 50);
 			cpy(filename+2, vals[2]);
 			filename[0] = 'd';
 			filename[1] = 't';
-			// sendMsg(filename);
 			if(!initCDTCP(filename))
                 break;
 			
@@ -273,11 +277,23 @@ int main(int argc, char *argv[])
 				filename[0] = 'd';
 				filename[1] = 'u';
 				sendMsg(filename);
-				// initUDPClient(filename);
-				if (!initUDPClient(filename))
+				if (!initUDPClient(filename+2))
 					break;
 			}
 			
+        }
+        else if (!strcmp(vals[0], "FileUpload")) {
+			if (!strcmp(vals[1], "TCP")) {
+
+			}
+			else if (!strcmp(vals[1], "UDP")) {
+				bzero(filename, 50);
+				cpy(filename+2, vals[2]);
+				filename[0] = 'u';
+				filename[1] = 'u';
+				sendMsg(filename);
+				initUDPServer(filename+2);
+			}
         }
         else if(!strcmp(vals[0], "exit")) {
             close(listenSocket);

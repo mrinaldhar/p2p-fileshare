@@ -45,7 +45,7 @@ int initUDPClient(char * filename)
 		strcat(filename, "_UDP");
 
 		int fileReceived, output;
-		fileReceived =  open(filename+2,O_CREAT|O_WRONLY|O_TRUNC, S_IWRITE | S_IREAD);
+		fileReceived =  open(filename,O_CREAT|O_WRONLY|O_TRUNC, S_IWRITE | S_IREAD);
 		if(fileReceived < 0)
 			PrintErrorAndDie("Error creating new file");
 
