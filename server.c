@@ -9,13 +9,10 @@
 #include <fcntl.h>
 #include "indexGet.c"
 #include "udpFileTransfer.c"
+#include "mongoose.h"
+#include "tcphandler.c"
 
-int listenSocket = 0;
-int connectionSocket = 0;
-char buffer[1024];
-struct sockaddr_in s_serv_addr;
-int portno = 5005;
-char IP[25];
+char *WEB_PORT;
 
 void parse(char cmd[], char ** vals) {
 	int i, j, k;
@@ -38,107 +35,6 @@ void parse(char cmd[], char ** vals) {
             break;
     }
     vals[k] = '\0';
-}
-void initServer() {
-	char filename[50], filesize[20];
-	char fbuffer[1024];
-	struct stat obj;
-	
-	// Its a general practice to make the entries 0 to clear them of malicious entry
-
-	bzero((char *) &s_serv_addr,sizeof(s_serv_addr));
-	
-
-	s_serv_addr.sin_family = AF_INET;	//For a remote machine
-	s_serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	s_serv_addr.sin_port = htons(portno);
-
-	int yes=1;
-//char yes='1'; // use this under Solaris
-
-if (setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) {
-    perror("setsockopt");
-}
-
-
-if(bind(listenSocket,(struct sockaddr * )&s_serv_addr,sizeof(s_serv_addr))<0)
-		printf("ERROR WHILE BINDING THE SOCKET\n");
-	else
-		printf("[SERVER] SOCKET BINDED SUCCESSFULLY\n");
-
-	// Listening to connections
-
-	if(listen(listenSocket,10) == -1)	//maximum connections listening to 10
-	{
-		printf("[SERVER] FAILED TO ESTABLISH LISTENING \n\n");
-	}
-	printf("[SERVER] Waiting fo client to connect....\n" );
-
-
-while((connectionSocket=accept(listenSocket , (struct sockaddr*)NULL,NULL))<0);
-
-
-	printf("[CONNECTED]\n");
-
-	bzero(buffer,1024);
-	if(recv(connectionSocket,buffer,1024,0)<0)
-		printf("ERROR while reading from Client\n");
-
-
-	// printf("Message from Client: %s\n",buffer );
-	
-	switch(buffer[0]) {
-		case 'd':
-
-	sscanf(buffer+2, "%s", filename);
-	if (buffer[1]=='t')
-	{
-	FILE *fp = fopen(filename, "rb");
-
-	bzero(buffer,1024);
-
-
-	if (fp>=0) 
-	{
-		buffer[0]='x';
-		stat(filename, &obj);
-		long long int size = (long long) obj.st_size;
-		sprintf(buffer+1, "%lld", size);
-		send(connectionSocket,buffer,1024,0);
-	}
-	printf("The size of file is: %s\n", buffer);
-
-	while (fread(buffer, sizeof(char), 1024, fp))
-	{
-		send(connectionSocket,buffer,1024,0);
-		bzero(buffer,1024);
-	}	
-}
-else if (buffer[1]=='u') {
-	// if (!initUDPServer(filename))
-					// break;
-	initUDPServer(filename);
-}
-	break;
-	 case 'u':
-	 sscanf(buffer+2, "%s", filename);
-	if (buffer[1]=='t'){
-	 sscanf(buffer, "%s", filename);
-	initCDTCP(filename);
-}
-	else if (buffer[1]=='u') {
-		if (!initUDPClient(filename))
-					break;
-	}
-break;
-case 'c':
-putchar('+');
-	printf("%s\n", buffer+1);
-	break;
-}
-
-	close(connectionSocket);
-	initServer();
 }
 
 char * sendMsg(char * msg) {
@@ -163,70 +59,6 @@ while(connect(ClientSocket,(struct sockaddr *)&c_serv_addr,sizeof(c_serv_addr))<
 	// close(ClientSocket);
 	// return returncode;
 }
-int initCDTCP(char * filename) {
-	int client_pid = fork();
-	if(client_pid != 0)
-        return client_pid;
-char returncode[1024];
-	int ClientSocket = 0;
-	int ret;
-	int i;
-	long long int fileSize;
-	struct sockaddr_in c_serv_addr;
-
-	ClientSocket = socket(AF_INET,SOCK_STREAM,0);
-	if(ClientSocket<0)
-	{
-		printf("ERROR WHILE CREATING A SOCKET\n");
-		return 0;
-	}
-	else
-		printf("[CLIENT] Socket created \n");
-
-
-
-	c_serv_addr.sin_family = AF_INET;
-	c_serv_addr.sin_port = htons(portno);
-	c_serv_addr.sin_addr.s_addr = inet_addr(IP);
-
-
-while(connect(ClientSocket,(struct sockaddr *)&c_serv_addr,sizeof(c_serv_addr))<0);
-bzero(buffer,1024);
-	sscanf(filename, "%s", buffer);
-	if(send(ClientSocket,buffer,strlen(buffer),0)<0)
-		printf("ERROR while writing to the socket\n");
-	bzero(buffer,1024);
-	strcat(filename, "_TCP");
-	FILE *fp = fopen(filename+2, "wb");
-	if(recv(ClientSocket,buffer,1024,0)<0)
-		printf("ERROR while reading from the socket\n");
- 	sscanf(buffer, "%s", returncode);
-	if(returncode[0]=='x') {
-		i=1;
-		fileSize = 0;
-		while(returncode[i]!='\0') {
-        fileSize *= 10;
-        fileSize += returncode[i++]-'0';
-    	}
-    	printf("The filesize is %lld\n", fileSize);
-		bzero(buffer,1024);
-		ret = 1;
-		while (2) {
-			if(!ret)
-            break;
-			bzero(buffer,1024);
-			ret=recv(ClientSocket,buffer,1024,0);
-			fwrite(buffer, sizeof(char),strlen(buffer), fp);
-			}
-		bzero(buffer,1024);
-		fclose(fp);
-	}
-	printf("File download complete.\n");
-	printf("Closing Connection\n");
-	close(ClientSocket);
-	exit(0);
-	return 1;
-}
 
 void cpy(char * a, char * b) {
 	int i, j;
@@ -237,6 +69,60 @@ void cpy(char * a, char * b) {
 	}
 	a[i] = '\0';
 }
+
+static const char *s_no_cache_header =
+  "Cache-Control: max-age=0, post-check=0, "
+  "pre-check=0, no-store, no-cache, must-revalidate\r\n";
+
+static void handle_restful_call(struct mg_connection *conn) {
+  char n1[100], n2[100];
+
+  // Get form variables
+  mg_get_var(conn, "n1", n1, sizeof(n1));
+  mg_get_var(conn, "n2", n2, sizeof(n2));
+
+  mg_printf_data(conn, "{ \"result\": %lf }", strtod(n1, NULL) + strtod(n2, NULL));
+}
+
+static void show_my_index(struct mg_connection *conn) {
+  char who[100];
+  char date[20], times[20], type[5], size[10], name[100];
+  // mg_get_var(conn, "whose", who, sizeof(who));
+  // if (!strcmp(who, "me")) {
+  FILE *fp = fopen("index-gui.txt", "rb");
+  char buffer[1024];
+  bzero(buffer,1024);
+  // mg_printf_data(conn, "{");
+  while (fread(buffer, sizeof(char), 1024, fp))
+  {
+  //   sscanf(buffer, "%s\t%s\t%s\t%s\t%s", date, times, type, size, name);
+  mg_printf_data(conn, "%s", buffer);
+  // mg_printf_data(conn, "{ \"date\": %s, \"times\": %s, \"type\": %s, \"size\": %s, \"name\": %s  },", date, times, type, size, name);
+
+  bzero(buffer, 1024);
+    
+  } 
+  // mg_printf_data(conn, "}");
+
+}
+
+static int ev_handler(struct mg_connection *conn, enum mg_event ev) {
+  switch (ev) {
+    case MG_AUTH: return MG_TRUE;
+    case MG_REQUEST:
+      if (!strcmp(conn->uri, "/ind")) {
+        // handle_restful_call(conn);
+        show_my_index(conn);
+        return MG_TRUE;
+      }
+      mg_send_file(conn, "index.html", s_no_cache_header);
+      return MG_MORE;
+    default: return MG_FALSE;
+  }
+}
+
+
+
 int main(int argc, char *argv[])
 {
 	
@@ -245,6 +131,8 @@ int main(int argc, char *argv[])
 	int i;
 	char cmd[1024];
 	char *vals[49];
+	WEB_PORT = strdup("8000");
+	
 	if(argc == 2)
 	{
 		bzero(IP,sizeof(IP));
@@ -253,6 +141,8 @@ int main(int argc, char *argv[])
 	else {
 		strcpy(IP, "127.0.0.1");
 	}
+
+
 	serv_pid = fork();
 	if (serv_pid == 0) {
 		listenSocket = socket(AF_INET,SOCK_STREAM,0);
@@ -267,8 +157,14 @@ int main(int argc, char *argv[])
         close(listenSocket);
 
 	}
+
+	
+
+
 	char filename[50];
 	char chat_msg[50];
+
+	
 	char * returncode;
 	while (1) {
 		printf("$> ");
@@ -300,7 +196,7 @@ int main(int argc, char *argv[])
 				filename[0] = 'd';
 				filename[1] = 'u';
 				sendMsg(filename);
-				if (!initUDPClient(filename+2))
+				if (!initUDPClient(filename+2, IP))
 					break;
 				bzero(filename, 50);
 
@@ -324,7 +220,7 @@ int main(int argc, char *argv[])
 				filename[0] = 'u';
 				filename[1] = 'u';
 				sendMsg(filename);
-				initUDPServer(filename+2);
+				initUDPServer(filename+2, IP);
 				bzero(filename, 50);
 
 			}
@@ -332,6 +228,43 @@ int main(int argc, char *argv[])
         else if(!strcmp(vals[0], "exit")) {
             close(listenSocket);
             exit(0);
+        }
+        else if(!strcmp(vals[0], "gui")) {
+        	serv_pid = fork();
+	if (serv_pid == 0) {
+
+struct mg_server *server;
+
+  // Create and configure the server
+  server = mg_create_server(NULL, ev_handler);
+  mg_set_option(server, "listening_port", WEB_PORT);
+
+  // Serve request. Hit Ctrl-C to terminate the program
+  printf("Starting on port %s\n", mg_get_option(server, "listening_port"));
+  for (;;) {
+    mg_poll_server(server, 1000);
+  }
+
+  // Cleanup, and free server instance
+  mg_destroy_server(&server);
+
+
+
+	}
+	// 			THE FOLLOWING CODE TRIES TO AUTOMATICALLY OPEN FIREFOX WHEN GUI IS ACTIVATED. This has some bugs. 
+	// char * ffox[1];
+	
+	// ffox[0] = strdup("firefox ");
+	// strcat(ffox[0], IP);
+	// strcat(ffox[0], ":");
+	// strcat(ffox[0], WEB_PORT);
+	// serv_pid = fork();
+	// if (serv_pid==0) {
+	// if (execvp(ffox[0], ffox) < 0) {      
+ //               printf("*** ERROR: exec failed\n");
+ //               exit(1);
+ //          }
+ //      }
         }
         else if(!strcmp(vals[0], "IndexGet")) {
         	// handleIndex(1,0);

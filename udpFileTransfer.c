@@ -18,7 +18,7 @@ void PrintErrorAndDie(char *s)
 	exit(1);
 }
 
-int initUDPClient(char * filename)
+int initUDPClient(char * filename, char * IP)
 {
 		int client = fork();
 	if(client != 0)
@@ -65,7 +65,7 @@ int initUDPClient(char * filename)
 	return 0;
 }
 
-int initUDPServer(char * filename)
+int initUDPServer(char * filename, char * IP)
 {
 	struct sockaddr_in socket_other;
 	int udp_socket, i, slen=sizeof(socket_other);
@@ -102,9 +102,4 @@ int fileToSend,output;
  }
  handleUDP(int mode, char * filename)
  {
- 	if(mode == 1)
- 		initUDPClient(filename);
- 	else if (mode == 0)
- 		initUDPServer(filename);
- 	return 0;
  }

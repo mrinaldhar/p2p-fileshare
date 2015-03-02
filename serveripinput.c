@@ -111,7 +111,7 @@ void initServer() {
 			else if (buffer[1]=='u') {
 				// if (!initUDPServer(filename))
 								// break;
-				initUDPServer(filename);
+				initUDPServer(filename, IP);
 			}
 			break;
 
@@ -296,7 +296,7 @@ int main(int argc, char *argv[])
 				filename[0] = 'd';
 				filename[1] = 'u';
 				sendMsg(filename);
-				if (!initUDPClient(filename+2))
+				if (!initUDPClient(filename+2, IP))
 					break;
 				bzero(filename, 50);
 			}	
@@ -321,7 +321,7 @@ int main(int argc, char *argv[])
 				filename[0] = 'u';
 				filename[1] = 'u';
 				sendMsg(filename);
-				initUDPServer(filename+2);
+				initUDPServer(filename+2, IP);
 				bzero(filename, 50);
 
 			}
