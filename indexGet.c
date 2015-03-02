@@ -97,12 +97,12 @@ void datetime(int date){
 		printf("%s ",k[i-2].name);
 	else
 		printf("%s ",k[i].name );
-	printf("%d ",years );
+	printf("%d\t",years );
 	printf("%d:",hours_left);
 	if(minutes_left < 10)
 		printf("0");
 	printf("%d:",minutes_left);
-	printf("%02d ",seconds_left );
+	printf("%02d\t",seconds_left );
 }
 
 int dateToEpoch(){
@@ -139,27 +139,27 @@ void human(int bsize){
 	if(bsize > GB)
 	{
 		hsize = ((float)bsize)/GB;
-		printf("%.1fG ",hsize );
+		printf("%.1fG\t",hsize );
 	}
 	else if(bsize > MB)
 	{
 		hsize = ((float)bsize)/MB;
-		printf("%.1fM ",hsize);
+		printf("%.1fM\t",hsize);
 	}
 	else if(bsize > KB)
 	{
 		hsize = ((float)bsize)/KB;
-		printf("%.1fK ",hsize);
+		printf("%.1fK\t",hsize);
 	}
 	else if(bsize > 0)
 	{
 		hsize = bsize;
-		printf(" %d ",bsize);
+		printf(" %d\t",bsize);
 	}
 	else
 	{
 		hsize = 0;
-		printf("%4d ",hsize);
+		printf("%4d\t",hsize);
 	}
 }
 
@@ -198,13 +198,13 @@ int getMoreInfo(char* path,char* name, int start_time, int end_time, int longlis
 		dflag = (S_ISDIR(fileStat.st_mode));
 		lflag = (S_ISLNK(fileStat.st_mode));
 		if(dflag)
-			printf("D ");
+			printf("D\t");
 		else if(lflag)
-			printf("L ");
+			printf("L\t");
 		else
-			printf("R ");
+			printf("R\t");
 		human(fileStat.st_size);
-		printf("%s ",name);
+		printf("%s",name);
 		printf("\n");
 	}
 	else
@@ -246,15 +246,6 @@ void getListOfFiles(char* string, int level, int start_time, int end_time, int l
             	{
             		printf("\t");
             	}
-            	// printf("%-10s ",(d_type == DT_REG) ?  "File" :
-             //                    (d_type == DT_DIR) ?  "Directory" :
-             //                    (d_type == DT_FIFO) ? "FIFO" :
-             //                    (d_type == DT_SOCK) ? "socket" :
-             //                    (d_type == DT_LNK) ?  "symlink" :
-             //                    (d_type == DT_BLK) ?  "block dev" :
-             //                    (d_type == DT_CHR) ?  "char dev" : "???");
-            	//printf("%s\n", d->d_name);
-            	//printf("%s/%s\n",string,d->d_name );
             	getMoreInfo(string,d->d_name,start_time,end_time,longlist,regexFlag,regex);
         		if((d_type == DT_DIR) && d->d_name[0] != '.')
         		{	
@@ -279,22 +270,23 @@ void historyOfRequests(char* pathToDirectory, int start_time, int end_time, int 
 	return 0;		
 }
 
-int main(int argc, char const *argv[])
+void handleIndex(int longlist, int regexFlag, char * regEX)
 {
 	// char* pathToDirectory = malloc(sizeof(char)*100);
-	char string[100];
+	char *string;
 	char regex_input[100];
 	regex_input[1] = '\0';
 	regex_input[0] = 'n';
-	printf("Path to Directory Input: ");
-	scanf("%s",string);
+	if (regEX[0]!='\0') {
+		strcpy(regex_input, regEX);
+	}
+	// printf("Path to Directory Input: ");
+	// scanf("%s",string);
+	string = strdup(".");
 	realpath(string,pathToDirectory);
-	int start_time = 0,end_time = 0,longlist, regexFlag;
+	int start_time = 0,end_time = 0;
 	regex_t regex;
-	printf("LongList Flag Input: ");
-	scanf("%d",&longlist);
-	printf("RegexFlag Input: ");
-	scanf("%d",&regexFlag);
+
 	if(longlist == 0)
 	{
 		getchar();
@@ -305,7 +297,8 @@ int main(int argc, char const *argv[])
 		else if(regexFlag == 1)
 		{	
 			int reti;
-			scanf("%s",regex_input);
+			// printf("Enter Regex Input:\n");
+			// scanf("%s",regex_input);
 			reti = regcomp(&regex,regex_input, 0);
 			if(reti)
 			{
@@ -323,7 +316,9 @@ int main(int argc, char const *argv[])
 		else if(regexFlag == 1)
 		{
 			int reti;
-			scanf("%s",regex_input);
+			// printf("Enter Regex Input:\n");
+
+			// scanf("%s",regex_input);
 			reti = regcomp(&regex,regex_input, 0);
 			if(reti)
 			{

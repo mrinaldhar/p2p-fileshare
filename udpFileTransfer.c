@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
@@ -18,10 +19,11 @@ void PrintErrorAndDie(char *s)
 	exit(1);
 }
 
-int initUDPServer(void)
+int initUDPClient(char * filename)
 {
-	while(1)
-	{
+		int client = fork();
+	if(client != 0)
+        return client;
 		int listenSocket, connect;
 		listenSocket = socket(AF_INET,SOCK_STREAM,0);
 		struct sockaddr_in socket_me, socket_other;
@@ -39,8 +41,11 @@ int initUDPServer(void)
 		printf("[UDP SERVER]: Listening...Waiting for Client...\n");
 	    
 
+		// int output;
+		strcat(filename, "_RCVDUDP");
+
 		int fileReceived, output;
-		fileReceived =  open("SampleFiles/Received_image.jpeg",O_CREAT|O_WRONLY|O_TRUNC, S_IWRITE);
+		fileReceived =  open(filename+2,O_CREAT|O_WRONLY|O_TRUNC, S_IWRITE | S_IREAD);
 		if(fileReceived < 0)
 			PrintErrorAndDie("Error creating new file");
 
@@ -48,17 +53,44 @@ int initUDPServer(void)
 		{
 			if (recvfrom(udp_socket, buf, BUFLEN, 0, &socket_other, &slen)==-1)
 				PrintErrorAndDie("recvfrom()");
-			output =  write(fileReceived,buf + 1,BUFLEN - 1);
+			printf("RECEIVED: %s", buf);
+
+			output =  write(fileReceived,buf,BUFLEN);
 			if(output < 0)
 				PrintErrorAndDie("Error in writing");
 		}
+
+
+		// FILE *fp =  fopen(filename,"wb");
+		// while(1)
+		// {
+		// 	if (recvfrom(udp_socket, buf, BUFLEN, 0, &socket_other, &slen)==-1)
+		// 		PrintErrorAndDie("recvfrom()");
+		// 	fwrite(buf, sizeof(char),strlen(buf), fp);
+		// 	// output =  write(fileReceived,buf + 1,BUFLEN - 1);
+		// 	if(output < 0)
+		// 		PrintErrorAndDie("Error in writing");
+		// }
+		// int ret = 1;
+		// while (2) {
+		// 	if(ret!=-1)
+  //           break;
+		// 	bzero(buf,1024);
+		// 	ret=recvfrom(udp_socket, buf, 1024, 0, &socket_other, &slen);
+		// 	printf("RECEIVED: %s", buf);
+		// 	fwrite(buf, sizeof(char),strlen(buf), fp);
+		// 	}
+		bzero(buf,1024);
+		// fclose(fp);
 		close(udp_socket);
-	}
 	return 0;
 }
 
-int initUDPClient(void)
+int initUDPServer(char * filename)
 {
+	// 	int server = fork();
+	// if(server != 0)
+ //        return server;
 	struct sockaddr_in socket_other;
 	int udp_socket, i, slen=sizeof(socket_other);
 	char buf[BUFLEN];
@@ -74,29 +106,56 @@ int initUDPClient(void)
 		fprintf(stderr, "inet_aton() failed\n");
 		exit(1);
 	}
+int fileToSend,output;
+	fileToSend = open(filename,O_RDONLY,S_IREAD);
+	printf("%s\n", filename);
 
-
-	int fileToSend,output;
-	fileToSend = open("SampleFiles/image.jpeg",O_RDONLY,S_IREAD);
 	bzero(buf,BUFLEN);
-	while(output = read(fileToSend, buf + 1, BUFLEN - 1))
+	while(output = read(fileToSend, buf, BUFLEN))
 	{
-		buf[0] ='x';
+
+		printf("SENT: %s\n", buf);
+
 		if(sendto(udp_socket, buf, BUFLEN, 0, &socket_other, slen)==-1)
 			PrintErrorAndDie("sendto()");
 		bzero(buf,BUFLEN);
 	}
+// int fileToSend,output;
+// 	fileToSend = open("SampleFiles/image.jpeg",O_RDONLY,S_IREAD);
+// 	bzero(buf,BUFLEN);
+// 	while(output = read(fileToSend, buf + 1, BUFLEN - 1))
+// 	{
+// 		buf[0] ='x';
+// 		if(sendto(udp_socket, buf, BUFLEN, 0, &socket_other, slen)==-1)
+// 			PrintErrorAndDie("sendto()");
+// 		bzero(buf,BUFLEN);
+// 	}
  
+// 	close(udp_socket);
+	// int fileToSend,output;
+	// int output;
+	// printf("%s\n", filename);
+	// FILE *fileToSend = fopen(filename,"rb");
+	// bzero(buf,BUFLEN);
+	// while(fread(buf, sizeof(char), 1024, fileToSend))
+	// {
+	// 	// buf[0] ='x';
+
+	// 	if(sendto(udp_socket, buf, 1024, 0, &socket_other, slen)==-1)
+	// 		PrintErrorAndDie("sendto()");
+		printf("SENT: %s\n", buf);
+
+	// 	bzero(buf,BUFLEN);
+	// }
+ // 	fclose(fileToSend);
 	close(udp_socket);
 	return 0;
  }
- int main(int argc, char const *argv[])
+ handleUDP(int mode, char * filename)
  {
- 	int soc;
- 	scanf("%d",&soc);
- 	if(soc == 1)
- 		initUDPClient();
- 	else
- 		initUDPServer();
+ 	if(mode == 1)
+ 		initUDPClient(filename);
+ 	else if (mode == 0)
+ 		initUDPServer(filename);
  	return 0;
  }

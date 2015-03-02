@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -8,6 +7,8 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include "indexGet.c"
+#include "udpFileTransfer.c"
 
 int listenSocket = 0;
 int connectionSocket = 0;
@@ -87,8 +88,10 @@ while((connectionSocket=accept(listenSocket , (struct sockaddr*)NULL,NULL))<0);
 	
 	switch(buffer[0]) {
 		case 'd':
-	
-	sscanf(buffer+1, "%s", filename);
+
+	sscanf(buffer+2, "%s", filename);
+	if (buffer[1]=='t')
+	{
 	FILE *fp = fopen(filename, "rb");
 
 	bzero(buffer,1024);
@@ -109,6 +112,14 @@ while((connectionSocket=accept(listenSocket , (struct sockaddr*)NULL,NULL))<0);
 		send(connectionSocket,buffer,1024,0);
 		bzero(buffer,1024);
 	}	
+}
+else if (buffer[1]=='u') {
+	// if (!initUDPServer(filename))
+					// break;
+	initUDPServer(filename);
+}
+	break;
+
 
 
 }
@@ -117,7 +128,29 @@ while((connectionSocket=accept(listenSocket , (struct sockaddr*)NULL,NULL))<0);
 	initServer();
 }
 
-int initClient(char * filename) {
+char * sendMsg(char * msg) {
+	char returncode[1024];
+	int ClientSocket = 0;
+	struct sockaddr_in c_serv_addr;
+
+	ClientSocket = socket(AF_INET,SOCK_STREAM,0);
+	c_serv_addr.sin_family = AF_INET;
+	c_serv_addr.sin_port = htons(portno);
+	c_serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+while(connect(ClientSocket,(struct sockaddr *)&c_serv_addr,sizeof(c_serv_addr))<0);
+	bzero(buffer,1024);
+	sscanf(msg, "%s", buffer);
+	if(send(ClientSocket,buffer,strlen(buffer),0)<0)
+		printf("ERROR while writing to the socket\n");
+	bzero(buffer,1024);
+
+	// if(recv(ClientSocket,buffer,1024,0)<0)
+	// 	printf("ERROR while reading from the socket\n");
+ // 	sscanf(buffer, "%s", returncode);
+	// close(ClientSocket);
+	// return returncode;
+}
+int initCDTCP(char * filename) {
 	int client_pid = fork();
 	if(client_pid != 0)
         return client_pid;
@@ -145,15 +178,13 @@ char returncode[1024];
 
 
 while(connect(ClientSocket,(struct sockaddr *)&c_serv_addr,sizeof(c_serv_addr))<0);
-
-	bzero(buffer,1024);
+bzero(buffer,1024);
 	sscanf(filename, "%s", buffer);
-
 	if(send(ClientSocket,buffer,strlen(buffer),0)<0)
 		printf("ERROR while writing to the socket\n");
 	bzero(buffer,1024);
-
-	FILE *fp = fopen("newfile", "wb");
+	strcat(filename, "_RCVDTCP");
+	FILE *fp = fopen(filename+2, "wb");
 	if(recv(ClientSocket,buffer,1024,0)<0)
 		printf("ERROR while reading from the socket\n");
  	sscanf(buffer, "%s", returncode);
@@ -197,6 +228,7 @@ int main(int argc, char *argv[])
 {
 	
 	int serv_pid = 0;
+	int udpServ_pid = 0;
 	int i;
 	char cmd[1024];
 	char *vals[49];
@@ -215,6 +247,7 @@ int main(int argc, char *argv[])
 
 	}
 	char filename[50];
+	char * returncode;
 	while (1) {
 		printf("$> ");
         scanf("%[^\n]s", cmd);
@@ -222,19 +255,47 @@ int main(int argc, char *argv[])
         parse(cmd, vals);
         if(!strcmp(vals[0], "FileDownload")) {
 			// printf("Enter filename: ");
-			printf("%s\n", vals[1]);
-			printf("%d\n", strlen(vals[1]));
+			if (!strcmp(vals[1], "TCP")) {
+				// printf("%s\n", vals[2]);
+			// printf("%d\n", strlen(vals[2]));
 			bzero(filename, 50);
-			cpy(filename+1, vals[1]);
+			cpy(filename+2, vals[2]);
 			filename[0] = 'd';
-		
-			if(!initClient(filename))
+			filename[1] = 't';
+			// sendMsg(filename);
+			if(!initCDTCP(filename))
                 break;
+			
+			}
+			else if (!strcmp(vals[1], "UDP")) {
+				bzero(filename, 50);
+				cpy(filename+2, vals[2]);
+				filename[0] = 'd';
+				filename[1] = 'u';
+				sendMsg(filename);
+				// initUDPClient(filename);
+				if (!initUDPClient(filename))
+					break;
+			}
+			
         }
         else if(!strcmp(vals[0], "exit")) {
             close(listenSocket);
             exit(0);
         }
+        else if(!strcmp(vals[0], "IndexGet")) {
+        	// handleIndex(1,0);
+        	if (!strcmp(vals[1], "--shortlist")) {
+        		handleIndex(0,0,"\0");
+        	}
+        	else if (!strcmp(vals[1], "--longlist")) {
+        		handleIndex(1,0,"\0");
+        	}
+        	else if (!strcmp(vals[1], "--regex")) {
+        		handleIndex(1,1,vals[2]);
+        	}
+        }
+        continue;
 	}
 	printf("\nClosing connection2\n");
 	
