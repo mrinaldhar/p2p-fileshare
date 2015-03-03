@@ -4,12 +4,14 @@ char buffer[1024];
 struct sockaddr_in s_serv_addr;
 int portno = 5005;
 char IP[25];
+	char perm;
+
 
 void initServer() {
 	char filename[50], filesize[20];
 	char fbuffer[1024];
 	struct stat obj;
-	
+	perm = 'n';
 	// Its a general practice to make the entries 0 to clear them of malicious entry
 
 	bzero((char *) &s_serv_addr,sizeof(s_serv_addr));
@@ -87,21 +89,45 @@ else if (buffer[1]=='u') {
 }
 	break;
 	 case 'u':
-	 sscanf(buffer+2, "%s", filename);
-	if (buffer[1]=='t'){
+	 printf("Remote wants to upload a file. Allow? (y/n)\n->");
+	 if (perm == 'n') {
+	 scanf("%c", &perm);
+	}
+
+	if (filename[1]=='t'){
 	 sscanf(buffer, "%s", filename);
 	 filename[0]='d';
 	initCDTCP(filename);
 }
-	else if (buffer[1]=='u') {
+	else if (filename[1]=='u') {
+		if (perm == 'y') {
+				 sscanf(buffer+2, "%s", filename);
+		bzero(buffer,1024);
+		strcpy(buffer, "y");
+	 	send(connectionSocket,buffer,1024,0);
+		bzero(buffer,1024);
 		if (!initUDPClient(filename, IP))
 					break;
+			}
 	}
 break;
 case 'c':
 putchar('+');
 	printf("%s\n", buffer+1);
 	break;
+
+	case 'i':
+	if (buffer[1]=='l') {
+        		handleIndex(1,0,"\0", 0, 0);
+		
+	}
+	else if (buffer[1]=='s') {
+        		handleIndex(0,0,"\0", 0, 0);
+
+	}
+	else if (buffer[1]=='r') {
+		
+	}
 }
 
 	close(connectionSocket);

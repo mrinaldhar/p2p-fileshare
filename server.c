@@ -37,7 +37,7 @@ void parse(char cmd[], char ** vals) {
     vals[k] = '\0';
 }
 
-char * sendMsg(char * msg) {
+char * sendMsg(char * msg, int wait) {
 	char returncode[1024];
 	int ClientSocket = 0;
 	struct sockaddr_in c_serv_addr;
@@ -52,12 +52,14 @@ while(connect(ClientSocket,(struct sockaddr *)&c_serv_addr,sizeof(c_serv_addr))<
 	if(send(ClientSocket,buffer,strlen(buffer),0)<0)
 		printf("ERROR while writing to the socket\n");
 	bzero(buffer,1024);
-
-	// if(recv(ClientSocket,buffer,1024,0)<0)
-	// 	printf("ERROR while reading from the socket\n");
- // 	sscanf(buffer, "%s", returncode);
-	// close(ClientSocket);
-	// return returncode;
+if (wait == 1) {
+	if(recv(ClientSocket,buffer,1024,0)<0)
+		printf("ERROR while reading from the socket\n");
+ 	sscanf(buffer, "%s", returncode);
+	close(ClientSocket);
+	return returncode;
+}
+	
 }
 
 void cpy(char * a, char * b) {
@@ -123,7 +125,7 @@ static void fileTransfer(struct mg_connection *conn) {
 
       if (!strcmp(action, "Download")) {
       	if (!strcmp(protocol, "udp")) {
-sendMsg(filename);
+sendMsg(filename, 0);
 		initUDPClient(filename+2, IP);
       	}
       	else {
@@ -134,11 +136,11 @@ sendMsg(filename);
       }
       else {
       	if (!strcmp(protocol, "udp")) {
-sendMsg(filename);
+sendMsg(filename, 0);
 				initUDPServer(filename+2, IP);
       	}
       	else {
-      		sendMsg(filename);
+      		sendMsg(filename, 0);
       	}
 
       }
@@ -225,6 +227,8 @@ struct mg_server *server;
 	}
 	
 
+	periodicCheck();
+
 
 	char filename[50];
 	char chat_msg[50];
@@ -241,7 +245,7 @@ struct mg_server *server;
 			cpy(filename+1, cmd+1);
 			filename[0] = 'c';
 			printf("THIS=%s", filename);
-			sendMsg(filename);
+			sendMsg(filename, 0);
         }
         else {
         parse(cmd, vals);
@@ -260,7 +264,7 @@ struct mg_server *server;
 				cpy(filename+2, vals[2]);
 				filename[0] = 'd';
 				filename[1] = 'u';
-				sendMsg(filename);
+				sendMsg(filename, 0);
 				if (!initUDPClient(filename+2, IP))
 					break;
 				bzero(filename, 50);
@@ -275,7 +279,7 @@ struct mg_server *server;
 				cpy(filename+2, vals[2]);
 				filename[0] = 'u';
 				filename[1] = 't';
-				sendMsg(filename);
+				sendMsg(filename, 0);
 				bzero(filename, 50);
 
 			}
@@ -284,8 +288,12 @@ struct mg_server *server;
 				cpy(filename+2, vals[2]);
 				filename[0] = 'u';
 				filename[1] = 'u';
-				sendMsg(filename);
-				initUDPServer(filename+2, IP);
+				returncode = sendMsg(filename, 1);
+				if (returncode[0]=='y')
+				{	
+					printf("Permission granted!\n");
+					initUDPServer(filename+2, IP);
+				}
 				bzero(filename, 50);
 
 			}
@@ -315,13 +323,19 @@ struct mg_server *server;
         													and give output in four files: index-they.txt index-me.txt index-they-gui.txt index-me-gui.txt */
         	// handleIndex(1,0);
         	if (!strcmp(vals[1], "--shortlist")) {
-        		handleIndex(0,0,"\0");
+        		strcpy(filename, "is");
+        		sendMsg(filename, 0);
+        		handleIndex(0,0,"\0", 0, 0);
         	}
         	else if (!strcmp(vals[1], "--longlist")) {
-        		handleIndex(1,0,"\0");
+        		strcpy(filename, "il");
+        		sendMsg(filename, 0);
+        		handleIndex(1,0,"\0", 0, 0);
         	}
         	else if (!strcmp(vals[1], "--regex")) {
-        		handleIndex(1,1,vals[2]);
+        		strcpy(filename, "ir");
+        		strcat(filename, vals[2]);
+        		// handleIndex(1,1,vals[2], 0, 0);
         	}
         }
         continue;

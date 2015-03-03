@@ -15,14 +15,30 @@
 #define KB 1024
 #define MB 1048576
 #define GB 1073741824
-char pathToDirectory[100];
 
+/*
+	Format for index-me-get.txt
+	{
+	"file_list": [
+				{"date":"2 Mar 2015", "time": "7:31:59", "type":"D", "size":"680","name":"."},
+				{"date": "1 Mar 2016", "time": "25:15:10", "type": "D", "size": "442", "name": ".."},
+				{"date": "2 Mar 2015", "time": "6:15:49", "type": "D", "size": "476", "name": ".git"},
+				{"date": "1 Mar 2016", "time": "27:46:32", "type": "R", "size":"13.4K", "name": "a.out"},
+				{"date": "21 Feb 2015", "time": "16:52:56", "type": "R", "size":"4.4K", "name": "backup.c"},
+				{"date": "1 Mar 2016", "time": "26:34:07", "type": "R", "size":"26.5M", "name": "client.c"}
+			]
+}*/
+
+
+char pathToDirectory[100];
+int JSONFlag;
 struct DIR {
            long           d_ino;
            off_t          d_off;
            unsigned short d_reclen;
            char           d_name[];
 };
+
 
 void datetime(int date){
 	int seconds, seconds_left,minutes,minutes_left,hours,hours_left,days,days_left,years;
@@ -92,17 +108,23 @@ void datetime(int date){
 	struct months k[] = {"Jan","Feb","Mar","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
 	// if(daym < 10)
 	// 	printf("0");
+	if(JSONFlag)
+		printf("{\"date\":\"");
 	printf("%d ",daym);
 	if(i > 2)
 		printf("%s ",k[i-2].name);
 	else
 		printf("%s ",k[i].name );
 	printf("%d\t",years );
+	if(JSONFlag)
+		printf("\",\"time\":\"");
 	printf("%d:",hours_left);
 	if(minutes_left < 10)
 		printf("0");
 	printf("%d:",minutes_left);
 	printf("%02d\t",seconds_left );
+	if(JSONFlag)
+		printf("\",");
 }
 
 int dateToEpoch(){
@@ -198,13 +220,29 @@ int getMoreInfo(char* path,char* name, int start_time, int end_time, int longlis
 		dflag = (S_ISDIR(fileStat.st_mode));
 		lflag = (S_ISLNK(fileStat.st_mode));
 		if(dflag)
-			printf("D\t");
+			if(JSONFlag)
+				printf("\"type\":\"D\", ");
+			else
+				printf("D\t");
 		else if(lflag)
-			printf("L\t");
+			if(JSONFlag)
+				printf("\"type\":\"L\", ");
+			else
+				printf("L\t");
 		else
+			if(JSONFlag)
+				printf("\"type\":\"R\", ");
+			else
 			printf("R\t");
+		//"size":"680","name":"."},
+		if(JSONFlag)
+			printf("\"size\":\"");
 		human(fileStat.st_size);
+		if(JSONFlag)
+			printf("\",\"name\":\"");
 		printf("%s",name);
+		if(JSONFlag)
+			printf("\"},");
 		printf("\n");
 	}
 	else
@@ -242,10 +280,10 @@ void getListOfFiles(char* string, int level, int start_time, int end_time, int l
 	        	d = (struct linux_dirent *) (buf + offset);
             	d_type = *(buf + offset + d->d_reclen - 1);
             	int i;
-            	for (i = 0; i < level; ++i)
-            	{
-            		printf("\t");
-            	}
+            	// for (i = 0; i < level; ++i)
+            	// {
+            	// 	printf("\t");
+            	// }
             	getMoreInfo(string,d->d_name,start_time,end_time,longlist,regexFlag,regex);
         		if((d_type == DT_DIR) && d->d_name[0] != '.')
         		{	
@@ -270,9 +308,17 @@ void historyOfRequests(char* pathToDirectory, int start_time, int end_time, int 
 	return 0;		
 }
 
-void handleIndex(int longlist, int regexFlag, char * regEX)
+void handleIndex(int longlist, int regexFlag, char * regEX, int indexMe, int JSON)
 {
-	// freopen ("index.txt","w",stdout); ENABLE THIS
+	JSONFlag = JSON;
+	if(!JSON)
+		freopen ("index.txt","w",stdout); //ENABLE THIS
+	else if(indexMe)
+		freopen("index-me-gui.txt","w",stdout);
+	else if(!indexMe)
+		freopen("index-they-gui.txt","w",stdout);
+	if(JSON)
+		printf("{\"file_list\": [\n");
 	char *string;
 	char regex_input[100];
 	regex_input[1] = '\0';
@@ -330,8 +376,25 @@ void handleIndex(int longlist, int regexFlag, char * regEX)
 		}
 	}
 	printf("%s\n",regex_input );
-	// fclose(stdout); ENABLE THIS !!
+	if(JSON)
+		printf("]\n}");
+	fclose(stdout); //ENABLE THIS !!
 	historyOfRequests(pathToDirectory,start_time,end_time,longlist,regexFlag,regex_input);
 	
 	return 0;
+}
+
+void periodicCheck()
+{
+	int childPID;
+	childPID = fork();
+	if(childPID !=0)
+		return;
+	while(1)
+	{
+		sleep(5);
+		handleIndex(1,0,"\0",1,1);
+		handleIndex(1,0,"\0",0,1);
+		// handleIndex(1,0,"\0",0,0);
+	}
 }
