@@ -74,6 +74,9 @@ padding-bottom: 100px;
 
 <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
 <script>
+function clean(s) {
+  return s.replace(/[\x00-\x1F\x7F-\x9F]/g, "");
+}
 $(document).ready(function() {
 
 showindex(0);
@@ -106,6 +109,8 @@ showindex(1);
         method: 'POST',
         data: { whose: who },
         success: function(data) {
+          data = clean(data);
+          console.log(data);
           data = JSON.parse(data);
           // console.log(data["file_list"].length);
           if (who == "me") {

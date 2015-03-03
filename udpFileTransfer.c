@@ -41,7 +41,7 @@ int initUDPClient(char * filename, char * IP)
 		if (bind(udp_socket, &socket_me, sizeof(socket_me))==-1)
 			PrintErrorAndDie("Error in bind");
 
-		printf("[UDP SERVER]: Listening...Waiting for Client...\n");
+		// printf("[UDP SERVER]: Listening...Waiting for Client...\n");
 	    
 
 		// int output;
@@ -58,7 +58,7 @@ int initUDPClient(char * filename, char * IP)
 			if (recvfrom(udp_socket, buf, BUFLEN, 0, &socket_other, &slen)==-1)
 				continue;
 				// PrintErrorAndDie("recvfrom()");
-			printf("RECEIVED: %s", buf);
+			// printf("RECEIVED: %s", buf);
 
 			output =  write(fileReceived,buf,strlen(buf));
 			if(output < 0)
@@ -92,7 +92,7 @@ int initUDPServer(char * filename, char * IP)
 	while(output = read(fileToSend, buf, BUFLEN))
 	{
 
-		printf("SENT: %s\n", buf);
+		// printf("SENT: %s\n", buf);
 
 		if(sendto(udp_socket, buf, BUFLEN, 0, &socket_other, slen)==-1)
 			PrintErrorAndDie("sendto()");

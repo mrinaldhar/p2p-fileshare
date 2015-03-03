@@ -17,6 +17,7 @@
 
 #define PATH 100000
 
+
 // -lssl -lcrypto required to compile
 unsigned char* findChecksum(char* file)
 {
@@ -28,7 +29,7 @@ unsigned char* findChecksum(char* file)
     unsigned char data[1024];
 
     if (inFile == NULL) {
-        printf ("%s can't be opened.\n", file);
+        // printf ("%s can't be opened.\n", file);
         return 0;
     }
 
@@ -38,6 +39,34 @@ unsigned char* findChecksum(char* file)
     MD5_Final (c,&mdContext);
     fclose (inFile);
     return c;
+}
+
+char* getFileInfo(char* name)
+{
+	char fileHashOutput[2000];
+	char temppath[PATH];
+    realpath(name, temppath);
+    // printf("::%s %s::\n", name, temppath);
+	struct stat fileStat;
+	int k;
+    if((k = lstat(temppath,&fileStat)) < 0)
+    {    
+    	// printf("Error has occured opening: %s\n",temppath);
+	    return "Error, excuse us.";
+	}
+	unsigned char* checksum;
+	checksum = findChecksum(temppath);
+	// printf("%s\n",temppath );
+	// printf("fileStat %d %d\n",fileStat.st_size,fileStat.st_mtime);
+	sprintf(fileHashOutput," %s %d %d ",temppath,fileStat.st_size,fileStat.st_mtime);
+	//printf("fileHashOutput: %s\n",fileHashOutput );
+	int i;
+	for(i = 0; i < MD5_DIGEST_LENGTH; i++)
+		sprintf(fileHashOutput + strlen(fileHashOutput),"%02x", checksum[i]);
+	sprintf(fileHashOutput + strlen(fileHashOutput), "\n" );
+	// printf("fileHashOutput %s\n",fileHashOutput);
+	return fileHashOutput;
+
 }
 
 // Filehash outputs to a file named fileHashOutput

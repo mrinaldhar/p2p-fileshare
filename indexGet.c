@@ -164,27 +164,27 @@ void human(int bsize){
 	if(bsize > GB)
 	{
 		hsize = ((float)bsize)/GB;
-		fprintf(fp,"%.1fG ",hsize );
+		fprintf(fp,"%.1fG",hsize );
 	}
 	else if(bsize > MB)
 	{
 		hsize = ((float)bsize)/MB;
-		fprintf(fp,"%.1fM ",hsize);
+		fprintf(fp,"%.1fM",hsize);
 	}
 	else if(bsize > KB)
 	{
 		hsize = ((float)bsize)/KB;
-		fprintf(fp,"%.1fK ",hsize);
+		fprintf(fp,"%.1fK",hsize);
 	}
 	else if(bsize > 0)
 	{
 		hsize = bsize;
-		fprintf(fp," %d ",bsize);
+		fprintf(fp,"%d",bsize);
 	}
 	else
 	{
 		hsize = 0;
-		fprintf(fp,"%4d ",hsize);
+		fprintf(fp,"%4d",hsize);
 	}
 }
 

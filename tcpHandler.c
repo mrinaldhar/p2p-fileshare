@@ -5,7 +5,36 @@ struct sockaddr_in s_serv_addr;
 int portno = 5005;
 char IP[25];
 	char perm;
+char* replace(char* string, char replaceThis, char replaceWith);
 
+char * sendMsg(char * msg, int wait) {
+	// printf("Send: : :%s\n",msg );
+	msg = replace(msg,' ', '&');
+	// printf("messssss %s\n",msg );
+	char returncode[1024];
+	int ClientSocket = 0;
+	struct sockaddr_in c_serv_addr;
+
+	ClientSocket = socket(AF_INET,SOCK_STREAM,0);
+	c_serv_addr.sin_family = AF_INET;
+	c_serv_addr.sin_port = htons(portno);
+	c_serv_addr.sin_addr.s_addr = inet_addr(IP);
+while(connect(ClientSocket,(struct sockaddr *)&c_serv_addr,sizeof(c_serv_addr))<0);
+	bzero(buffer,1024);
+	sscanf(msg, "%s", buffer);
+	if(send(ClientSocket,buffer,strlen(buffer),0)<0) 
+		printf("ERROR while writing to the socket\n");
+	bzero(buffer,1024);
+if (wait == 1) {
+	if(recv(ClientSocket,buffer,1024,0)<0)
+		printf("ERROR while reading from the socket\n");
+ 	sscanf(buffer, "%s", returncode);
+	close(ClientSocket);
+	// printf("WAITING: %s\n", returncode);
+	return returncode;
+}
+	
+}
 
 void initServer() {
 	char filename[50], filesize[20];
@@ -31,8 +60,6 @@ if (setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1)
 
 if(bind(listenSocket,(struct sockaddr * )&s_serv_addr,sizeof(s_serv_addr))<0)
 		printf("ERROR WHILE BINDING THE SOCKET\n");
-	else
-		printf("[SERVER] SOCKET BINDED SUCCESSFULLY\n");
 
 	// Listening to connections
 
@@ -40,13 +67,12 @@ if(bind(listenSocket,(struct sockaddr * )&s_serv_addr,sizeof(s_serv_addr))<0)
 	{
 		printf("[SERVER] FAILED TO ESTABLISH LISTENING \n\n");
 	}
-	printf("[SERVER] Waiting fo client to connect....\n" );
 
 
 while((connectionSocket=accept(listenSocket , (struct sockaddr*)NULL,NULL))<0);
 
 
-	printf("[CONNECTED]\n");
+	// printf("[CONNECTED]\n");
 
 	bzero(buffer,1024);
 	if(recv(connectionSocket,buffer,1024,0)<0)
@@ -54,6 +80,7 @@ while((connectionSocket=accept(listenSocket , (struct sockaddr*)NULL,NULL))<0);
 
 
 	// printf("Message from Client: %s\n",buffer );
+	strcpy(buffer, replace(buffer,'&',' '));
 	
 	switch(buffer[0]) {
 		case 'd':
@@ -74,13 +101,18 @@ while((connectionSocket=accept(listenSocket , (struct sockaddr*)NULL,NULL))<0);
 		sprintf(buffer+1, "%lld", size);
 		send(connectionSocket,buffer,1024,0);
 	}
-	printf("The size of file is: %s\n", buffer);
+	// printf("The size of file is: %s\n", buffer);
 
 	while (fread(buffer, sizeof(char), 1024, fp))
 	{
 		send(connectionSocket,buffer,1024,0);
 		bzero(buffer,1024);
 	}	
+	strcpy(buffer+1, getFileInfo(filename));
+	buffer[0]='c';
+	// printf("DATA: %s", buffer);
+	sendMsg(buffer, 0);
+
 }
 else if (buffer[1]=='u') {
 	// if (!initUDPServer(filename))
@@ -95,8 +127,8 @@ else if (buffer[1]=='u') {
 	 if (perm == 'n') {
 	 scanf("%c", &perm);
 	}
-	printf("PERM: %c\n", perm);
-	printf("FILE%s\n", filename);
+	// printf("PERM: %c\n", perm);
+	// printf("FILE%s\n", filename);
 	if (filename[1]=='t'){
 	 sscanf(buffer, "%s", filename);
 	 filename[0]='d';
@@ -104,11 +136,11 @@ else if (buffer[1]=='u') {
 }
 	else if (filename[1]=='u') {
 		if (perm == 'y') {
-			printf("ENTERED!\n\n");
+			// printf("ENTERED!\n\n");
 				 sscanf(buffer+2, "%s", filename);
 		bzero(buffer,1024);
 		strcpy(buffer, "y");
-		printf("buff%s\n", buffer);
+		// printf("buff%s\n", buffer);
 	 	send(connectionSocket,buffer,1024,0);
 		bzero(buffer,1024);
 		if (!initUDPClient(filename, IP))
@@ -118,6 +150,7 @@ else if (buffer[1]=='u') {
 break;
 case 'c':
 putchar('+');
+
 	printf("%s\n", buffer+1);
 	break;
 
@@ -168,8 +201,8 @@ char returncode[1024];
 		printf("ERROR WHILE CREATING A SOCKET\n");
 		return 0;
 	}
-	else
-		printf("[CLIENT] Socket created \n");
+	// else
+		// printf("[CLIENT] Socket created \n");
 
 
 
@@ -196,7 +229,7 @@ bzero(buffer,1024);
         fileSize *= 10;
         fileSize += returncode[i++]-'0';
     	}
-    	printf("The filesize is %lld\n", fileSize);
+    	// printf("The filesize is %lld\n", fileSize);
 		bzero(buffer,1024);
 		ret = 1;
 		while (2) {
@@ -210,7 +243,7 @@ bzero(buffer,1024);
 		fclose(fp);
 	}
 	printf("File download complete.\n");
-	printf("Closing Connection\n");
+	// printf("Closing Connection\n");
 	close(ClientSocket);
 	exit(0);
 	return 1;

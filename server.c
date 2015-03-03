@@ -18,6 +18,18 @@
 
 char *WEB_PORT;
 
+char* replace(char* string, char replaceThis, char replaceWith)
+{
+	int l = strlen(string);
+	int i;
+	for (i = 0; i < l; ++i)
+	{
+		if(string[i] == replaceThis)
+			string[i] = replaceWith;
+	}
+	return string;
+}
+
 void parse(char cmd[], char ** vals) {
 	int i, j, k;
 	char arg[49], c;
@@ -41,31 +53,6 @@ void parse(char cmd[], char ** vals) {
     vals[k] = '\0';
 }
 
-char * sendMsg(char * msg, int wait) {
-	char returncode[1024];
-	int ClientSocket = 0;
-	struct sockaddr_in c_serv_addr;
-
-	ClientSocket = socket(AF_INET,SOCK_STREAM,0);
-	c_serv_addr.sin_family = AF_INET;
-	c_serv_addr.sin_port = htons(portno);
-	c_serv_addr.sin_addr.s_addr = inet_addr(IP);
-while(connect(ClientSocket,(struct sockaddr *)&c_serv_addr,sizeof(c_serv_addr))<0);
-	bzero(buffer,1024);
-	sscanf(msg, "%s", buffer);
-	if(send(ClientSocket,buffer,strlen(buffer),0)<0)
-		printf("ERROR while writing to the socket\n");
-	bzero(buffer,1024);
-if (wait == 1) {
-	if(recv(ClientSocket,buffer,1024,0)<0)
-		printf("ERROR while reading from the socket\n");
- 	sscanf(buffer, "%s", returncode);
-	close(ClientSocket);
-	printf("WAITING: %s\n", returncode);
-	return returncode;
-}
-	
-}
 
 void cpy(char * a, char * b) {
 	int i, j;
@@ -186,7 +173,11 @@ static int ev_handler(struct mg_connection *conn, enum mg_event ev) {
 
 int main(int argc, char *argv[])
 {
-	
+	printf("====================== mSquared File Transfer Program ======================\n\n");
+	printf("Developed by: Mrinal Dhar 201325118 | Mounika Somisetty 201330076\n");
+	printf("Enter 'help' to get help about commands and other cool stuff this program can do.\n\n");
+	printf("============================================================================\n\n");
+
 	int serv_pid = 0;
 	int udpServ_pid = 0;
 	int i;
@@ -209,10 +200,10 @@ int main(int argc, char *argv[])
 		listenSocket = socket(AF_INET,SOCK_STREAM,0);
 	if(listenSocket<0)
 	{
-		printf("ERROR WHILE CREATING A SOCKET\n");
+		// printf("ERROR WHILE CREATING A SOCKET\n");
 	}
-	else
-		printf("[SERVER] SOCKET ESTABLISHED SUCCESSFULLY\n\n");
+	else {}
+		// printf("[SERVER] SOCKET ESTABLISHED SUCCESSFULLY\n\n");
 
 		initServer();
         close(listenSocket);
@@ -229,7 +220,7 @@ struct mg_server *server;
   mg_set_option(server, "listening_port", WEB_PORT);
 
   // Serve request. 
-  printf("Starting on port %s\n", mg_get_option(server, "listening_port"));
+  // printf("Web Server Starting on port %s\n", mg_get_option(server, "listening_port"));
   for (;;) {
     mg_poll_server(server, 1000);
   }
@@ -253,13 +244,13 @@ struct mg_server *server;
 	while (1) {
 		printf("$> ");
         scanf("%[^\n]s", cmd);
-        printf("THIS: %s\n", cmd);
+        // printf("THIS: %s\n", cmd);
         getchar();
         if (cmd[0]=='-') {
         	bzero(chat_msg, 50);
 			cpy(filename+1, cmd+1);
 			filename[0] = 'c';
-			printf("THIS=%s", filename);
+			// printf("THIS=%s", filename);
 			sendMsg(filename, 0);
         }
         else {
@@ -291,7 +282,7 @@ struct mg_server *server;
         }
         else if (!strcmp(vals[0], "FileUpload")) {
 			if (!strcmp(vals[1], "TCP")) {
-				printf("DOING!!\n\n");
+				// printf("DOING!!\n\n");
 				bzero(filename, 50);
 				cpy(filename+2, vals[2]);
 				filename[0] = 'u';
@@ -306,7 +297,7 @@ struct mg_server *server;
 				filename[0] = 'u';
 				filename[1] = 'u';
 				returncode = sendMsg(filename, 1);
-				printf("GOT RCODE %s\n\n", returncode);
+				// printf("GOT RCODE %s\n\n", returncode);
 				if (returncode[0]=='y')
 				{	
 					printf("Permission granted!\n");
@@ -355,6 +346,14 @@ struct mg_server *server;
  //          }
  //      }
         }
+        else if (!strcmp(vals[0], "help")) {
+			FILE *fp = fopen("readme.txt", "rb");
+			while (fread(buffer, sizeof(char), 1024, fp))
+			{
+				printf("%s", buffer);
+				bzero(buffer,1024);
+			}	
+        }
         else if(!strcmp(vals[0], "IndexGet")) {  		/* I need indexget to work on both the remote machine and the local machine
         													and give output in four files: index-they.txt index-me.txt index-they-gui.txt index-me-gui.txt */
         	// handleIndex(1,0);
@@ -380,18 +379,6 @@ struct mg_server *server;
 			strcpy(filename+2, "index.txt");
 			initCDTCP(filename);
 
-// sleep(5);
-// 			FILE *fp = fopen("index.txt_TCP", "rb");
-			
-// 				bzero(filename, 50);
-// 				// printf()
-// 			while (fread(filename, sizeof(char), 50, fp))
-// 			{
-// 				printf("READING!");
-// 				// printf("%s", filename);
-// 				// bzero(buffer, 1024);
-// 			}	
-			// fclose(fp);
 
         }
         continue;
