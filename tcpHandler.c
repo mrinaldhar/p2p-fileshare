@@ -89,11 +89,14 @@ else if (buffer[1]=='u') {
 }
 	break;
 	 case 'u':
+				 sscanf(buffer, "%s", filename);
+
 	 printf("Remote wants to upload a file. Allow? (y/n)\n->");
 	 if (perm == 'n') {
 	 scanf("%c", &perm);
 	}
-
+	printf("PERM: %c\n", perm);
+	printf("FILE%s\n", filename);
 	if (filename[1]=='t'){
 	 sscanf(buffer, "%s", filename);
 	 filename[0]='d';
@@ -101,9 +104,11 @@ else if (buffer[1]=='u') {
 }
 	else if (filename[1]=='u') {
 		if (perm == 'y') {
+			printf("ENTERED!\n\n");
 				 sscanf(buffer+2, "%s", filename);
 		bzero(buffer,1024);
 		strcpy(buffer, "y");
+		printf("buff%s\n", buffer);
 	 	send(connectionSocket,buffer,1024,0);
 		bzero(buffer,1024);
 		if (!initUDPClient(filename, IP))
@@ -119,15 +124,26 @@ putchar('+');
 	case 'i':
 	if (buffer[1]=='l') {
         		handleIndex(1,0,"\0", 0, 0);
-		
+
 	}
 	else if (buffer[1]=='s') {
         		handleIndex(0,0,"\0", 0, 0);
 
 	}
 	else if (buffer[1]=='r') {
-		
+        		handleIndex(1,1,buffer+2, 0, 0);
+
 	}
+	break;
+
+	case 'h':
+	if (buffer[1]=='v') {
+		fileHash(1, buffer+2, ".");		//change if shared directory has been changed. THIS IS HARDCODED
+	}
+	else if (buffer[1]=='c') {
+		fileHash(0, ".", ".");
+	}
+	break;
 }
 
 	close(connectionSocket);

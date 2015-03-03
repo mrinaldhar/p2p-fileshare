@@ -17,13 +17,6 @@
 
 #define PATH 100000
 
-struct DIR {
-           long           d_ino;
-           off_t          d_off;
-           unsigned short d_reclen;
-           char           d_name[];
-};
-
 // -lssl -lcrypto required to compile
 unsigned char* findChecksum(char* file)
 {
@@ -51,6 +44,7 @@ unsigned char* findChecksum(char* file)
 int fileHash(int verifyFlag, char* name, char* pathOfSharedFolder)
 {
 	FILE *fileHashOutput;
+	remove("fileHashOutput.txt");
 	fileHashOutput = fopen ("fileHashOutput.txt", "a");
 	if(verifyFlag == 1)
 	{
@@ -116,19 +110,3 @@ int fileHash(int verifyFlag, char* name, char* pathOfSharedFolder)
 	    }
 }
 
-
-int main(int argc, char const *argv[])
-{
-	char string[100];
-	char pathToDirectory[100];
-	char name[100];
-	bzero(name,sizeof(name));
-	scanf("%s",string);
-	realpath(string,pathToDirectory);
-	int verifyFlag = 0;
-	scanf("%d",&verifyFlag);
-	if(verifyFlag)
-		scanf("%s",string);
-	fileHash(verifyFlag,name,pathToDirectory);
-	return 0;
-}

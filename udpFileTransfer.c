@@ -33,7 +33,11 @@ int initUDPClient(char * filename, char * IP)
 		memset((char *) &socket_me, 0, sizeof(socket_me));
 		socket_me.sin_family = AF_INET;
 		socket_me.sin_port = htons(PORT);
-		socket_me.sin_addr.s_addr = htonl(INADDR_ANY);
+		if (inet_aton(IP, &socket_me.sin_addr)==0)
+		{
+			fprintf(stderr, "inet_aton() failed\n");
+			exit(1);
+		}
 		if (bind(udp_socket, &socket_me, sizeof(socket_me))==-1)
 			PrintErrorAndDie("Error in bind");
 
@@ -44,6 +48,7 @@ int initUDPClient(char * filename, char * IP)
 		strcat(filename, "_UDP");
 
 		int fileReceived, output;
+		remove(filename);
 		fileReceived =  open(filename,O_CREAT|O_WRONLY|O_TRUNC, S_IWRITE | S_IREAD);
 		if(fileReceived < 0)
 			PrintErrorAndDie("Error creating new file");
@@ -51,7 +56,8 @@ int initUDPClient(char * filename, char * IP)
 		while(1)
 		{
 			if (recvfrom(udp_socket, buf, BUFLEN, 0, &socket_other, &slen)==-1)
-				PrintErrorAndDie("recvfrom()");
+				continue;
+				// PrintErrorAndDie("recvfrom()");
 			printf("RECEIVED: %s", buf);
 
 			output =  write(fileReceived,buf,strlen(buf));
@@ -77,12 +83,8 @@ int initUDPServer(char * filename, char * IP)
 	memset((char *) &socket_other, 0, sizeof(socket_other));
 	socket_other.sin_family = AF_INET;
 	socket_other.sin_port = htons(PORT);
-	if (inet_aton(IP, &socket_other.sin_addr)==0)
-	{
-		fprintf(stderr, "inet_aton() failed\n");
-		exit(1);
-	}
-int fileToSend,output;
+	socket_other.sin_addr.s_addr = htonl(INADDR_ANY);
+	int fileToSend,output;
 	fileToSend = open(filename,O_RDONLY,S_IREAD);
 	printf("%s\n", filename);
 

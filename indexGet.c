@@ -15,6 +15,7 @@
 #define KB 1024
 #define MB 1048576
 #define GB 1073741824
+FILE* fp;
 
 /*
 	Format for index-me-get.txt
@@ -107,24 +108,26 @@ void datetime(int date){
 	};
 	struct months k[] = {"Jan","Feb","Mar","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
 	// if(daym < 10)
-	// 	printf("0");
+	// 	fprintf(fp,"0");
 	if(JSONFlag)
-		printf("{\"date\":\"");
-	printf("%d ",daym);
+		fprintf(fp,"{\"date\":\"");
+	fprintf(fp,"%d ",daym);
 	if(i > 2)
-		printf("%s ",k[i-2].name);
+		fprintf(fp,"%s ",k[i-2].name);
 	else
-		printf("%s ",k[i].name );
-	printf("%d\t",years );
+		fprintf(fp,"%s ",k[i].name );
+	fprintf(fp,"%d",years );
 	if(JSONFlag)
-		printf("\",\"time\":\"");
-	printf("%d:",hours_left);
+		fprintf(fp,"\",\"time\":\"");
+	fprintf(fp,"%d:",hours_left);
 	if(minutes_left < 10)
-		printf("0");
-	printf("%d:",minutes_left);
-	printf("%02d\t",seconds_left );
+		fprintf(fp,"0");
+	fprintf(fp,"%d:",minutes_left);
+	fprintf(fp,"%02d",seconds_left );
 	if(JSONFlag)
-		printf("\",");
+		fprintf(fp,"\",");
+	else
+		fprintf(fp,"");
 }
 
 int dateToEpoch(){
@@ -161,27 +164,27 @@ void human(int bsize){
 	if(bsize > GB)
 	{
 		hsize = ((float)bsize)/GB;
-		printf("%.1fG\t",hsize );
+		fprintf(fp,"%.1fG ",hsize );
 	}
 	else if(bsize > MB)
 	{
 		hsize = ((float)bsize)/MB;
-		printf("%.1fM\t",hsize);
+		fprintf(fp,"%.1fM ",hsize);
 	}
 	else if(bsize > KB)
 	{
 		hsize = ((float)bsize)/KB;
-		printf("%.1fK\t",hsize);
+		fprintf(fp,"%.1fK ",hsize);
 	}
 	else if(bsize > 0)
 	{
 		hsize = bsize;
-		printf(" %d\t",bsize);
+		fprintf(fp," %d ",bsize);
 	}
 	else
 	{
 		hsize = 0;
-		printf("%4d\t",hsize);
+		fprintf(fp,"%4d ",hsize);
 	}
 }
 
@@ -194,7 +197,7 @@ int getMoreInfo(char* path,char* name, int start_time, int end_time, int longlis
 	int k;
     if((k = lstat(temppath,&fileStat)) < 0)
     {    
-    	printf("Error has occured\n");
+    	fprintf(stderr,"Error has occured\n");
 	    return 1;
 	}
 	if(fileStat.st_mtime <= end_time && fileStat.st_mtime >= start_time || longlist == 1)
@@ -206,7 +209,7 @@ int getMoreInfo(char* path,char* name, int start_time, int end_time, int longlis
 			reti = regexec(&regex, name, 0, NULL, 0);
 			if( !reti );
 			else if( reti == REG_NOMATCH ){
-					printf("--\n");
+					fprintf(fp,"--\n");
 			        return 0;
 			}
 			else{
@@ -221,32 +224,35 @@ int getMoreInfo(char* path,char* name, int start_time, int end_time, int longlis
 		lflag = (S_ISLNK(fileStat.st_mode));
 		if(dflag)
 			if(JSONFlag)
-				printf("\"type\":\"D\", ");
+				fprintf(fp,"\"type\":\"D\", ");
 			else
-				printf("D\t");
+				fprintf(fp,"D");
 		else if(lflag)
 			if(JSONFlag)
-				printf("\"type\":\"L\", ");
+				fprintf(fp,"\"type\":\"L\", ");
 			else
-				printf("L\t");
+				fprintf(fp,"L");
 		else
 			if(JSONFlag)
-				printf("\"type\":\"R\", ");
+				fprintf(fp,"\"type\":\"R\", ");
 			else
-			printf("R\t");
+			fprintf(fp,"R");
 		//"size":"680","name":"."},
 		if(JSONFlag)
-			printf("\"size\":\"");
+			fprintf(fp,"\"size\":\"");
+		else
+			fprintf(fp,"");
 		human(fileStat.st_size);
 		if(JSONFlag)
-			printf("\",\"name\":\"");
-		printf("%s",name);
+			fprintf(fp,"\",\"name\":\"");
+		fprintf(fp,"%s",name);
 		if(JSONFlag)
-			printf("\"},");
-		printf("\n");
+			fprintf(fp,"\"},");
+		fprintf(fp,"\n");
 	}
 	else
-		printf("-\n");
+		if(!JSONFlag)
+			fprintf(fp,"-\n");
 	return 0;
 }
 
@@ -260,17 +266,17 @@ void getListOfFiles(char* string, int level, int start_time, int end_time, int l
 	    char d_type;
 	    strcpy(pathToDirectory,string);
 	    if ((fd=open(pathToDirectory,O_RDONLY)) == -1)
-	        printf("Path cannot be opened");
+	        fprintf(fp,"Path cannot be opened");
 	    while(1) 
 	    {
 	        if((canread = syscall(SYS_getdents, fd, buf, PATH))== -1)
 	        {
 	        	if((exists = access(pathToDirectory,F_OK) ) ==  0)
 	        	{
-	        		printf("Something\n");
+	        		fprintf(fp,"Something\n");
 	        		break;
 	        	}
-	            printf("Error: Something has gone terribly wrong. Run for your life! ***BOOMMM***\n");
+	            fprintf(fp,"Error: Something has gone terribly wrong. Run for your life! ***BOOMMM***\n");
 	            break;
 	        }
 	        else if (canread == 0)
@@ -282,7 +288,7 @@ void getListOfFiles(char* string, int level, int start_time, int end_time, int l
             	int i;
             	// for (i = 0; i < level; ++i)
             	// {
-            	// 	printf("\t");
+            	// 	fprintf(fp,"");
             	// }
             	getMoreInfo(string,d->d_name,start_time,end_time,longlist,regexFlag,regex);
         		if((d_type == DT_DIR) && d->d_name[0] != '.')
@@ -312,13 +318,13 @@ void handleIndex(int longlist, int regexFlag, char * regEX, int indexMe, int JSO
 {
 	JSONFlag = JSON;
 	if(!JSON)
-		freopen ("index.txt","w",stdout); //ENABLE THIS
+		fp = fopen ("index.txt","w"); //ENABLE THIS
 	else if(indexMe)
-		freopen("index-me-gui.txt","w",stdout);
+		fp = fopen("index-me-gui.txt","w");
 	else if(!indexMe)
-		freopen("index-they-gui.txt","w",stdout);
+		fp = fopen("index-they-get.txt","w");
 	if(JSON)
-		printf("{\"file_list\": [\n");
+		fprintf(fp,"{\"file_list\": [\n");
 	char *string;
 	char regex_input[100];
 	regex_input[1] = '\0';
@@ -326,7 +332,7 @@ void handleIndex(int longlist, int regexFlag, char * regEX, int indexMe, int JSO
 	if (regEX[0]!='\0') {
 		strcpy(regex_input, regEX);
 	}
-	// printf("Path to Directory Input: ");
+	// fprintf(fp,"Path to Directory Input: ");
 	// scanf("%s",string);
 	string = strdup(".");
 	realpath(string,pathToDirectory);
@@ -343,7 +349,7 @@ void handleIndex(int longlist, int regexFlag, char * regEX, int indexMe, int JSO
 		else if(regexFlag == 1)
 		{	
 			int reti;
-			// printf("Enter Regex Input:\n");
+			// fprintf(fp,"Enter Regex Input:\n");
 			// scanf("%s",regex_input);
 			reti = regcomp(&regex,regex_input, 0);
 			if(reti)
@@ -362,7 +368,7 @@ void handleIndex(int longlist, int regexFlag, char * regEX, int indexMe, int JSO
 		else if(regexFlag == 1)
 		{
 			int reti;
-			// printf("Enter Regex Input:\n");
+			// fprintf(fp,"Enter Regex Input:\n");
 
 			// scanf("%s",regex_input);
 			reti = regcomp(&regex,regex_input, 0);
@@ -375,14 +381,17 @@ void handleIndex(int longlist, int regexFlag, char * regEX, int indexMe, int JSO
 			regfree(&regex);
 		}
 	}
-	printf("%s\n",regex_input );
+	// printf("%s\n",regex_input );
 	if(JSON)
-		printf("]\n}");
-	fclose(stdout); //ENABLE THIS !!
+		fprintf(fp,"]\n}");
+	fseek(fp,-5,SEEK_END);
+	fprintf(fp, " ");
+	fclose(fp); //ENABLE THIS !!
 	historyOfRequests(pathToDirectory,start_time,end_time,longlist,regexFlag,regex_input);
 	
 	return 0;
 }
+
 
 void periodicCheck()
 {
@@ -394,7 +403,7 @@ void periodicCheck()
 	{
 		sleep(5);
 		handleIndex(1,0,"\0",1,1);
-		handleIndex(1,0,"\0",0,1);
+		// handleIndex(1,0,"\0",0,1);
 		// handleIndex(1,0,"\0",0,0);
 	}
 }

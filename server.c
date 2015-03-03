@@ -10,7 +10,11 @@
 #include "indexGet.c"
 #include "udpFileTransfer.c"
 #include "mongoose.h"
+#include "fileHash.c"
 #include "tcpHandler.c"
+#include <signal.h>
+#include <dirent.h>
+
 
 char *WEB_PORT;
 
@@ -57,6 +61,7 @@ if (wait == 1) {
 		printf("ERROR while reading from the socket\n");
  	sscanf(buffer, "%s", returncode);
 	close(ClientSocket);
+	printf("WAITING: %s\n", returncode);
 	return returncode;
 }
 	
@@ -87,6 +92,7 @@ static void handle_restful_call(struct mg_connection *conn) {
 }
 
 static void show_index(struct mg_connection *conn) {
+
   char who[100];
   char date[20], times[20], type[5], size[10], name[100];
   mg_get_var(conn, "whose", who, sizeof(who));
@@ -103,7 +109,16 @@ static void show_index(struct mg_connection *conn) {
   } 
 }
 else if (!strcmp(who, "they")) {
-  FILE *fp = fopen("index-they-gui.txt", "rb"); /* Similar to the above case, just for the remote server. */
+		char filename[50];
+	bzero(filename, 50);
+			filename[0] = 'd';
+			filename[1] = 't';
+			strcpy(filename+2, "index-me-gui.txt");
+
+			initCDTCP(filename);
+               
+            sleep(5);
+  FILE *fp = fopen("index-me-gui.txt_TCP", "rb"); /* Similar to the above case, just for the remote server. */
 
  char buffer[1024];
   bzero(buffer,1024);
@@ -264,9 +279,11 @@ struct mg_server *server;
 				cpy(filename+2, vals[2]);
 				filename[0] = 'd';
 				filename[1] = 'u';
-				sendMsg(filename, 0);
+				// sleep(5);
 				if (!initUDPClient(filename+2, IP))
 					break;
+
+				sendMsg(filename, 0);
 				bzero(filename, 50);
 
 			}
@@ -289,9 +306,11 @@ struct mg_server *server;
 				filename[0] = 'u';
 				filename[1] = 'u';
 				returncode = sendMsg(filename, 1);
+				printf("GOT RCODE %s\n\n", returncode);
 				if (returncode[0]=='y')
 				{	
 					printf("Permission granted!\n");
+					sleep(2);
 					initUDPServer(filename+2, IP);
 				}
 				bzero(filename, 50);
@@ -300,7 +319,24 @@ struct mg_server *server;
         }
         else if(!strcmp(vals[0], "exit")) {
             close(listenSocket);
+            system("killall -s 9 server");
             exit(0);
+        }
+        else if(!strcmp(vals[0], "FileHash")) {
+        	if (!strcmp(vals[1], "--verify")) {
+        		strcpy(filename, "hv");
+        		strcat(filename, vals[2]);
+        		sendMsg(filename, 0);
+        	}
+        	else if (!strcmp(vals[1], "--checkall")) {
+        		strcpy(filename, "hc");
+        		sendMsg(filename, 0);
+        	}
+        	bzero(filename, 50);
+			filename[0] = 'd';
+			filename[1] = 't';
+			strcpy(filename+2, "fileHashOutput.txt");
+			initCDTCP(filename);
         }
         else if(!strcmp(vals[0], "gui")) {
 
@@ -335,8 +371,28 @@ struct mg_server *server;
         	else if (!strcmp(vals[1], "--regex")) {
         		strcpy(filename, "ir");
         		strcat(filename, vals[2]);
+        		sendMsg(filename, 0);
         		// handleIndex(1,1,vals[2], 0, 0);
         	}
+        	bzero(filename, 50);
+			filename[0] = 'd';
+			filename[1] = 't';
+			strcpy(filename+2, "index.txt");
+			initCDTCP(filename);
+
+// sleep(5);
+// 			FILE *fp = fopen("index.txt_TCP", "rb");
+			
+// 				bzero(filename, 50);
+// 				// printf()
+// 			while (fread(filename, sizeof(char), 50, fp))
+// 			{
+// 				printf("READING!");
+// 				// printf("%s", filename);
+// 				// bzero(buffer, 1024);
+// 			}	
+			// fclose(fp);
+
         }
         continue;
 	}
