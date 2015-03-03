@@ -90,6 +90,7 @@ else if (buffer[1]=='u') {
 	 sscanf(buffer+2, "%s", filename);
 	if (buffer[1]=='t'){
 	 sscanf(buffer, "%s", filename);
+	 filename[0]='d';
 	initCDTCP(filename);
 }
 	else if (buffer[1]=='u') {

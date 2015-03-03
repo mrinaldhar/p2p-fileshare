@@ -84,12 +84,12 @@ showindex(1);
   }, 5000);
 });
   function showindex(who) {
-          document.getElementById('theirlist').innerHTML = "<tr><td colspan='5' style='border-bottom: 1px dashed black;'>Local Files</td></tr><tr class='thead'><td>Type</td>\
+          document.getElementById('theirlist').innerHTML = "<tr><td colspan='5' style='border-bottom: 1px dashed black;'>Remote Files</td></tr><tr class='thead'><td>Type</td>\
         <td>Name</td>\
         <td>Date/Time</td>\
         <td>Size</td>\
         <td>Actions</td></tr>";
-          document.getElementById('mylist').innerHTML = "<tr><td colspan='5' style='border-bottom: 1px dashed black;'>Remote Files</td></tr><tr class='thead'><td>Type</td>\
+          document.getElementById('mylist').innerHTML = "<tr><td colspan='5' style='border-bottom: 1px dashed black;'>Local Files</td></tr><tr class='thead'><td>Type</td>\
         <td>Name</td>\
         <td>Date/Time</td>\
         <td>Size</td>\
@@ -134,15 +134,16 @@ showindex(1);
     console.log(action, protocol, filename);
     filename = action.toLowerCase()[0]+protocol[0]+filename;
     console.log(action, protocol, filename);
-    
+
     $.ajax({
         url: '/transfer',
         method: 'POST',
         data: { act: action, via:protocol, file:filename },
         success: function(data) {
-          alert("Your request has been processed successfully.");
           }
       });
+          alert("Your request has been processed successfully.");
+    
   }
 </script>
 </html>
