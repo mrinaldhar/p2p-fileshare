@@ -89,7 +89,7 @@ static void show_my_index(struct mg_connection *conn) {
   char date[20], times[20], type[5], size[10], name[100];
   // mg_get_var(conn, "whose", who, sizeof(who));
   // if (!strcmp(who, "me")) {
-  FILE *fp = fopen("index-gui.txt", "rb");
+  FILE *fp = fopen("index.txt", "rb");
   char buffer[1024];
   bzero(buffer,1024);
   // mg_printf_data(conn, "{");
@@ -158,6 +158,27 @@ int main(int argc, char *argv[])
 
 	}
 
+        	serv_pid = fork();
+	if (serv_pid == 0) {
+
+struct mg_server *server;
+
+  // Create and configure the server
+  server = mg_create_server(NULL, ev_handler);
+  mg_set_option(server, "listening_port", WEB_PORT);
+
+  // Serve request. 
+  printf("Starting on port %s\n", mg_get_option(server, "listening_port"));
+  for (;;) {
+    mg_poll_server(server, 1000);
+  }
+
+  // Cleanup, and free server instance
+  mg_destroy_server(&server);
+
+
+
+	}
 	
 
 
@@ -230,27 +251,7 @@ int main(int argc, char *argv[])
             exit(0);
         }
         else if(!strcmp(vals[0], "gui")) {
-        	serv_pid = fork();
-	if (serv_pid == 0) {
 
-struct mg_server *server;
-
-  // Create and configure the server
-  server = mg_create_server(NULL, ev_handler);
-  mg_set_option(server, "listening_port", WEB_PORT);
-
-  // Serve request. Hit Ctrl-C to terminate the program
-  printf("Starting on port %s\n", mg_get_option(server, "listening_port"));
-  for (;;) {
-    mg_poll_server(server, 1000);
-  }
-
-  // Cleanup, and free server instance
-  mg_destroy_server(&server);
-
-
-
-	}
 	// 			THE FOLLOWING CODE TRIES TO AUTOMATICALLY OPEN FIREFOX WHEN GUI IS ACTIVATED. This has some bugs. 
 	// char * ffox[1];
 	
