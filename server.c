@@ -84,25 +84,33 @@ static void handle_restful_call(struct mg_connection *conn) {
   mg_printf_data(conn, "{ \"result\": %lf }", strtod(n1, NULL) + strtod(n2, NULL));
 }
 
-static void show_my_index(struct mg_connection *conn) {
+static void show_index(struct mg_connection *conn) {
   char who[100];
   char date[20], times[20], type[5], size[10], name[100];
-  // mg_get_var(conn, "whose", who, sizeof(who));
-  // if (!strcmp(who, "me")) {
-  FILE *fp = fopen("index.txt", "rb");
-  char buffer[1024];
+  mg_get_var(conn, "whose", who, sizeof(who));
+  if (!strcmp(who, "me")) {
+  FILE *fp = fopen("index-me-gui.txt", "rb"); /* I need a index-me-gui.txt file with the format as shown in the current index-me-gui.txt file 
+  										that I created from hand right now. It should be easy, just need to change the indexget file output a bit.	*/
+ 
+ char buffer[1024];
   bzero(buffer,1024);
-  // mg_printf_data(conn, "{");
   while (fread(buffer, sizeof(char), 1024, fp))
   {
-  //   sscanf(buffer, "%s\t%s\t%s\t%s\t%s", date, times, type, size, name);
   mg_printf_data(conn, "%s", buffer);
-  // mg_printf_data(conn, "{ \"date\": %s, \"times\": %s, \"type\": %s, \"size\": %s, \"name\": %s  },", date, times, type, size, name);
-
   bzero(buffer, 1024);
-    
   } 
-  // mg_printf_data(conn, "}");
+}
+else if (!strcmp(who, "they")) {
+  // FILE *fp = fopen("index-they-gui.txt", "rb"); /* Similar to the above case, just for the remote server. */
+
+ // char buffer[1024];
+ //  bzero(buffer,1024);
+ //  while (fread(buffer, sizeof(char), 1024, fp))
+ //  {
+ //  mg_printf_data(conn, "%s", buffer);
+ //  bzero(buffer, 1024);
+ //  } 
+}
 
 }
 
@@ -112,7 +120,7 @@ static int ev_handler(struct mg_connection *conn, enum mg_event ev) {
     case MG_REQUEST:
       if (!strcmp(conn->uri, "/ind")) {
         // handle_restful_call(conn);
-        show_my_index(conn);
+        show_index(conn);
         return MG_TRUE;
       }
       mg_send_file(conn, "index.html", s_no_cache_header);
