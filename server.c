@@ -113,7 +113,38 @@ else if (!strcmp(who, "they")) {
 }
 
 }
+static void fileTransfer(struct mg_connection *conn) {
+	char action[10];
+	char protocol[10];
+	char filename[50];
+  mg_get_var(conn, "act", action, sizeof(action));
+  mg_get_var(conn, "via", protocol, sizeof(protocol));
+  mg_get_var(conn, "file", filename, sizeof(filename));
 
+      if (!strcmp(action, "Download")) {
+      	if (!strcmp(protocol, "udp")) {
+sendMsg(filename);
+		initUDPClient(filename+2, IP);
+      	}
+      	else {
+			initCDTCP(filename);
+                
+      	}
+
+      }
+      else {
+      	if (!strcmp(protocol, "udp")) {
+sendMsg(filename);
+				initUDPServer(filename+2, IP);
+      	}
+      	else {
+      		sendMsg(filename);
+      	}
+
+      }
+
+
+}
 static int ev_handler(struct mg_connection *conn, enum mg_event ev) {
   switch (ev) {
     case MG_AUTH: return MG_TRUE;
@@ -122,6 +153,11 @@ static int ev_handler(struct mg_connection *conn, enum mg_event ev) {
         // handle_restful_call(conn);
         show_index(conn);
         return MG_TRUE;
+      }
+      else if (!strcmp(conn->uri, "/transfer")) {
+      	fileTransfer(conn);
+        return MG_TRUE;
+
       }
       mg_send_file(conn, "index.html", s_no_cache_header);
       return MG_MORE;
@@ -275,7 +311,8 @@ struct mg_server *server;
  //          }
  //      }
         }
-        else if(!strcmp(vals[0], "IndexGet")) {
+        else if(!strcmp(vals[0], "IndexGet")) {  		/* I need indexget to work on both the remote machine and the local machine
+        													and give output in four files: index-they.txt index-me.txt index-they-gui.txt index-me-gui.txt */
         	// handleIndex(1,0);
         	if (!strcmp(vals[1], "--shortlist")) {
         		handleIndex(0,0,"\0");
