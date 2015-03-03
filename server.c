@@ -101,15 +101,15 @@ static void show_index(struct mg_connection *conn) {
   } 
 }
 else if (!strcmp(who, "they")) {
-  // FILE *fp = fopen("index-they-gui.txt", "rb"); /* Similar to the above case, just for the remote server. */
+  FILE *fp = fopen("index-they-gui.txt", "rb"); /* Similar to the above case, just for the remote server. */
 
- // char buffer[1024];
- //  bzero(buffer,1024);
- //  while (fread(buffer, sizeof(char), 1024, fp))
- //  {
- //  mg_printf_data(conn, "%s", buffer);
- //  bzero(buffer, 1024);
- //  } 
+ char buffer[1024];
+  bzero(buffer,1024);
+  while (fread(buffer, sizeof(char), 1024, fp))
+  {
+  mg_printf_data(conn, "%s", buffer);
+  bzero(buffer, 1024);
+  } 
 }
 
 }
