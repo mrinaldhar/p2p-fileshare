@@ -10,7 +10,7 @@
 #include "indexGet.c"
 #include "udpFileTransfer.c"
 #include "mongoose.h"
-#include "tcphandler.c"
+#include "tcpHandler.c"
 
 char *WEB_PORT;
 
@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
 	char cmd[1024];
 	char *vals[49];
 	WEB_PORT = strdup("8000");
-	
+
 	if(argc == 2)
 	{
 		bzero(IP,sizeof(IP));
